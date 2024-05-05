@@ -10,6 +10,9 @@ bits 16
 
 org 0x7c00
 
+; 60 bits BPB Data, more 2 to align boot code
+; INTERESTING! The fact the IP increase before the execution of the next code, i need to make more 2 offset to align the code
+times 62 db 20h
 start: jmp loader
 
 ;******************************
@@ -31,8 +34,7 @@ printDone:
 ;   Bootloader Entry Point
 ;***********************************
 
-msg     db      "Welcome to Hashida OS!", 0
-
+msg     db      "EPK", 0
 
 loader:
     xor ax, ax
@@ -44,7 +46,3 @@ loader:
 
     cli
     hlt
-
-; Esta no resto da MBR
-;times 510 - ($-$$) db 0
-;dw 0xAA55

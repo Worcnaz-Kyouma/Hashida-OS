@@ -9,7 +9,7 @@ bin/%.bin: src/%.asm
 bin/bootloader.img: bin/bootloader.bin bin/stg.bin
 	dd if=/dev/zero of=$@ bs=1M count=$(DISK_SIZE) status=progress
 
-	echo -e "o\nn\np\n1\n\n\nw\n" | fdisk $@
+	echo -e "o\nn\np\n1\n\n\na\nw\n" | fdisk $@
 
 	sudo losetup -fP $@
 
@@ -26,7 +26,13 @@ bin/bootloader.img: bin/bootloader.bin bin/stg.bin
 	sudo losetup -d /dev/loop0
 	
 	dd if=$< of=$@ bs=440 seek=0 count=1 conv=notrunc
-#440 por usar MBR
+	dd if=$@ of=bpb.temp bs=64 skip=16384 count=1 conv=notrunc
+	dd if=bpb.temp of=$@ bs=60 seek=0 count=1 conv=notrunc
+	
+	sudo rm -rf bpb.temp
+
+#-72 bytes por usar MBR
+#-60 bytes por ter BPB no começo
 #1MiB iniciais nao usados... coisa do windows e linux pelo que vi, ai essas ferramente do seguem
 
 iso/bootloader.img: bin/bootloader.img
