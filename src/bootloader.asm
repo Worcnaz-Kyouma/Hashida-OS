@@ -11,27 +11,26 @@ bits 16
 org 0x7c00
 
 ; BPB Data Structure
-bpbStartingJump:        dw 0 nop
-bpbOEMIdentifier:       dw 0 nop
-bpbBytesPerSector:      dw 0 nop
-bpbSectorsPerCluster:   dw 0 nop
-bpbReservedSectors:     dw 0 nop
-bpbNumberOfFATs:        dw 0 nop
-bpbRootDirEntries:      dw 0 nop
-bpbNumberOfSectors:     dw 0 nop
-bpbMediaDescType:       dw 0 nop
-bpbSectorsPerFAT:       dw 0 nop
-bpbSectorsPerTrack:     dw 0 nop
-bpbNumberOfHeads:       dw 0 nop
-bpbHiddenSectors:       dw 0 nop
-bpbNumberOfSectorsE:    dw 0 nop
-ebpbDriveNumber:        dw 0 nop
-ebpbReserved:           dw 0 nop
-ebpbSignature:          dw 0 nop
-ebpbVolumeID:           dw 0 nop
-ebpbVolumeLabel:        dw 0 nop
-ebpbSystemIdentifier:   dw 0 nop
-
+bpbStartingJump:        db 3 dup (0)    ;3
+bpbOEMIdentifier:       dq 0            ;8
+bpbBytesPerSector:      dw 0            ;2
+bpbSectorsPerCluster:   db 0            ;1
+bpbReservedSectors:     dw 0            ;2
+bpbNumberOfFATs:        db 0            ;1
+bpbRootDirEntries:      dw 0            ;2
+bpbNumberOfSectors:     dw 0            ;2
+bpbMediaDescType:       db 0            ;1
+bpbSectorsPerFAT:       dw 0            ;2
+bpbSectorsPerTrack:     dw 0            ;2
+bpbNumberOfHeads:       dw 0            ;2
+bpbHiddenSectors:       dd 0            ;4
+bpbNumberOfSectorsE:    dd 0            ;4
+ebpbDriveNumber:        db 0            ;1
+ebpbReserved:           db 0            ;1
+ebpbSignature:          db 0            ;1
+ebpbVolumeID:           dd 0            ;4
+ebpbVolumeLabel:        db 11 dup (0)   ;11
+ebpbSystemIdentifier:   dq 0            ;8
 
 start: jmp loader
 
