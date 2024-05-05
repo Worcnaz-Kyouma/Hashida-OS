@@ -10,9 +10,29 @@ bits 16
 
 org 0x7c00
 
-; 60 bits BPB Data, more 2 to align boot code
-; INTERESTING! The fact the IP increase before the execution of the next code, i need to make more 2 offset to align the code
-times 62 db 20h
+; BPB Data Structure
+bpbStartingJump:        dw 0 nop
+bpbOEMIdentifier:       dw 0 nop
+bpbBytesPerSector:      dw 0 nop
+bpbSectorsPerCluster:   dw 0 nop
+bpbReservedSectors:     dw 0 nop
+bpbNumberOfFATs:        dw 0 nop
+bpbRootDirEntries:      dw 0 nop
+bpbNumberOfSectors:     dw 0 nop
+bpbMediaDescType:       dw 0 nop
+bpbSectorsPerFAT:       dw 0 nop
+bpbSectorsPerTrack:     dw 0 nop
+bpbNumberOfHeads:       dw 0 nop
+bpbHiddenSectors:       dw 0 nop
+bpbNumberOfSectorsE:    dw 0 nop
+ebpbDriveNumber:        dw 0 nop
+ebpbReserved:           dw 0 nop
+ebpbSignature:          dw 0 nop
+ebpbVolumeID:           dw 0 nop
+ebpbVolumeLabel:        dw 0 nop
+ebpbSystemIdentifier:   dw 0 nop
+
+
 start: jmp loader
 
 ;******************************
