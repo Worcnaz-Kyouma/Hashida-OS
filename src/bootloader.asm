@@ -11,6 +11,7 @@ bits 16
 org 0x7c00
 
 ; BPB Data Structure
+; Will be filled by build moment
 bpbStartingJump:        db 3 dup (0)    ;3
 bpbOEMIdentifier:       dq 0            ;8
 bpbBytesPerSector:      dw 0            ;2
