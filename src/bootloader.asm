@@ -84,7 +84,7 @@ populateDiskParameters:
 ;   Bootloader Entry Point
 ;***********************************
 
-msg     db      "EPK", 0
+msg     db      "EPK!!!", 0
 
 loader:
     ; Preparing OS environment
@@ -94,6 +94,9 @@ loader:
 
     ; Read disk parameters
     call populateDiskParameters
+
+    mov si, msg
+    call print
 
     cli
     hlt
