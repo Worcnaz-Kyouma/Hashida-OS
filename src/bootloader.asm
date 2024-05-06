@@ -58,10 +58,11 @@ printDone:
     ret
 
 populateDiskParameters:
+    xor ax, ax
+    mov es, ax
+    mov di, ax
     mov ah, 08h
     mov dl, 80h
-    mov es, 0
-    mov di, 0
     int 13h
 
     mov bl, cl
