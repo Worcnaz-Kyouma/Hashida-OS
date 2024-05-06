@@ -10,34 +10,42 @@ bits 16
 
 org 0x7c00
 
-; BPB Data Structure
-; Will be filled by build moment
-bpbStartingJump:        db 3 dup (0)    ;3
-bpbOEMIdentifier:       dq 0            ;8
-bpbBytesPerSector:      dw 0            ;2
-bpbSectorsPerCluster:   db 0            ;1
-bpbReservedSectors:     dw 0            ;2
-bpbNumberOfFATs:        db 0            ;1
-bpbRootDirEntries:      dw 0            ;2
-bpbNumberOfSectors:     dw 0            ;2
-bpbMediaDescType:       db 0            ;1
-bpbSectorsPerFAT:       dw 0            ;2
-bpbSectorsPerTrack:     dw 0            ;2
-bpbNumberOfHeads:       dw 0            ;2
-bpbHiddenSectors:       dd 0            ;4
-bpbNumberOfSectorsE:    dd 0            ;4
-ebpbDriveNumber:        db 0            ;1
-ebpbReserved:           db 0            ;1
-ebpbSignature:          db 0            ;1
-ebpbVolumeID:           dd 0            ;4
-ebpbVolumeLabel:        db 11 dup (0)   ;11
-ebpbSystemIdentifier:   dq 0            ;8
+;***********************************
+;   BIOS Parameter Block(BPB), will be populated
+;   in the build of the system
+;***********************************
+bpbStartingJump:        resb 3         ; Reserve 3 bytes
+bpbOEMIdentifier:       resb 8         ; Reserve 8 bytes
+bpbBytesPerSector:      resb 2         ; Reserve 2 bytes (1 word)
+bpbSectorsPerCluster:   resb 1         ; Reserve 1 byte
+bpbReservedSectors:     resb 2         ; Reserve 2 bytes (1 word)
+bpbNumberOfFATs:        resb 1         ; Reserve 1 byte
+bpbRootDirEntries:      resb 2         ; Reserve 2 bytes (1 word)
+bpbNumberOfSectors:     resb 2         ; Reserve 2 bytes (1 word)
+bpbMediaDescType:       resb 1         ; Reserve 1 byte
+bpbSectorsPerFAT:       resb 2         ; Reserve 2 bytes (1 word)
+bpbSectorsPerTrack:     resb 2         ; Reserve 2 bytes (1 word)
+bpbNumberOfHeads:       resb 2         ; Reserve 2 bytes (1 word)
+bpbHiddenSectors:       resb 4         ; Reserve 4 bytes (1 dword)
+bpbNumberOfSectorsE:    resb 4         ; Reserve 4 bytes (1 dword)
+ebpbDriveNumber:        resb 1         ; Reserve 1 byte
+ebpbReserved:           resb 1         ; Reserve 1 byte
+ebpbSignature:          resb 1         ; Reserve 1 byte
+ebpbVolumeID:           resb 4         ; Reserve 4 bytes (1 dword)
+ebpbVolumeLabel:        resb 11        ; Reserve 11 bytes
+ebpbSystemIdentifier:   resb 8         ; Reserve 8 bytes
 
 start: jmp loader
 
 ;******************************
-; Prints a string
-;   DS[SI]: 0 terminated string
+;   Disk parameters(int 13h, AH=08h)
+;******************************
+numberOfHeads:      resb 1
+numberOfCylinders:  resb 2
+numberOfSectors:    resb 1
+
+;******************************
+; Functions
 ;******************************
 print:
     lodsb
@@ -46,8 +54,29 @@ print:
     mov ah, 0x0e
     int 10h
     jmp print
-
 printDone:
+    ret
+
+populateDiskParameters:
+    mov ah, 08h
+    mov dl, 80h
+    mov es, 0
+    mov di, 0
+    int 13h
+
+    mov bl, cl
+    and cl, 00111111b
+    mov [numberOfSectors], cl
+
+    mov cl, bl
+    mov [numberOfCylinders], ch
+    xor ch, ch
+    and cl, 11000000b
+    shl cx, 2
+    or [numberOfCylinders], cx
+
+    mov [numberOfHeads], dh
+
     ret
 
 ;***********************************
@@ -57,12 +86,13 @@ printDone:
 msg     db      "EPK", 0
 
 loader:
+    ; Preparing OS environment
     xor ax, ax
     mov ds, ax
     mov es, ax
 
-    mov si, msg
-    call print
+    ; Read disk parameters
+    call populateDiskParameters
 
     cli
     hlt
