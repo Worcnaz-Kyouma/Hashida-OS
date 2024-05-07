@@ -3,7 +3,7 @@
 ;       - A simple Bootloader
 ;
 ;   Author: Nicolas Almeida Prado
-;   Mentor: Mike from BrokenThorn
+;   Mentor: Mike from BrokenThorn, and much more resources
 ;***********************************
 
 bits 16
@@ -45,19 +45,30 @@ numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
 
 ;******************************
+;   Important addresses
+;******************************
+FATSegmentES:           db 0x0000
+rootDirectoryOffset:    db 0x0200
+
+;******************************
 ; Functions
 ;******************************
-print:
+Print:
     lodsb
     or al,al
-    jz printDone
+    jz PrintDone
     mov ah, 0x0e
     int 10h
-    jmp print
-printDone:
+    jmp Print
+PrintDone:
     ret
 
-populateDiskParameters:
+ResetDiskSystem:
+    mov ah, 0
+    mov dl, 80h
+    int 13h
+
+PopulateDiskParameters:
     xor ax, ax
     mov es, ax
     mov di, ax
@@ -80,7 +91,7 @@ populateDiskParameters:
 
     ret
 
-clearRegisters:
+ClearRegisters:
     xor ax, ax
     xor bx, bx
     xor cx, cx
@@ -91,80 +102,7 @@ clearRegisters:
 
     ret
 
-pointer_asciiAxPrologue db 'AX: ', 0
-pointer_asciiAx db 20 dup(0)
-dumpAxRegister:
-    mov dx, pointer_asciiAx
-    call populateAsciiDxPointer
-
-    mov si, pointer_asciiAxPrologue
-    call print
-    mov si, pointer_asciiAx
-    call print
-    mov si, defaultBreakline
-    call print
-
-    ret
-
-populateAsciiDxPointer_pointer_tempArray db 16 dup(0)
-populateAsciiDxPointer:
-    xor cx, cx
-    mov si, populateAsciiDxPointer_pointer_tempArray
-    populateAsciiDxPointer_loop_binToAscii:
-        mov bx, ax
-        and bx, 0000000000000001b
-        add bl, 00110000b
-        mov [si], bl
-
-        inc si
-        inc cx
-        shr ax, 1
-        cmp cx, 16
-
-        jne populateAsciiDxPointer_loop_binToAscii
-    
-    mov di, dx
-    mov bx, 0
-    populateAsciiDxPointer_loop_populateAsciiDxPointer:
-        dec si
-        dec cx
-
-        mov al, [si]
-        mov [di], al
-
-        cmp cx, 0
-        jz populateAsciiDxPointer_loopEnd_populateAsciiDxPointer
-
-        inc di
-
-        push ax
-        push bx
-        push cx
-        push dx
-
-        xor dx, dx
-        mov ax, cx
-        mov bx, 4
-        div bx
-        cmp dx, 0
-
-        pop dx
-        pop cx
-        pop bx
-        pop ax
-        jne populateAsciiDxPointer_loop_populateAsciiDxPointer
-
-        mov al, ' '
-        mov [di], al
-
-        inc di
-        jmp populateAsciiDxPointer_loop_populateAsciiDxPointer
-    populateAsciiDxPointer_loopEnd_populateAsciiDxPointer:
-
-    inc di
-    mov bl, 0
-    mov [di], bl
-    ret
+;extern dumpAxRegister
 
 ;***********************************
 ;   Bootloader Entry Point
@@ -175,17 +113,43 @@ defaultBreakline   db      0xA, 0xD, 0
 
 loader:
     ; Preparing OS environment
-    call clearRegisters
+    call ClearRegisters
 
-    mov si, welcomeMessage
-    call print
+    reset:
+        call ResetDiskSystem
+        jc reset
 
     ; Read disk parameters
-    call populateDiskParameters
+    call PopulateDiskParameters
 
-    mov ax, [bpbNumberOfHeads]
-    ; Test
-    call dumpAxRegister
+    mov ah, 02h
+    mov al, [bpbSectorsPerCluster]
+
+    mov cl, [peFirstSectorCHS + 1]
+    and cl, 00111111b
+
+    mov ch, [peFirstSectorCHS + 2]
+
+    mov dh, [peFirstSectorCHS]
+
+    mov dl, 80h
+    mov es, [FATSegmentES]
+    xor bx, bx
+    int 13h
+
 
     cli
     hlt
+
+times 446 - ($-$$) db 0
+
+;***********************************
+;   MBR: Partition entry nº1, will be populated
+;   in the build of the system
+;***********************************
+peStatus:           resb 1
+peFirstSectorCHS:   resb 3
+peType:             resb 1
+peLastSectorCHS:    resb 3
+peFirstSectorLBA:   resb 4
+peNumberOfSectors:  resb 4
