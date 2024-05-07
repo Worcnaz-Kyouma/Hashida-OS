@@ -93,55 +93,13 @@ clearRegisters:
 
 pointer_asciiAxPrologue db 'AX: ', 0
 pointer_asciiAx db 20 dup(0)
-
-pointer_asciiBxPrologue db 'BX: ', 0
-pointer_asciiBx db 20 dup(0)
-
-pointer_asciiCxPrologue db 'CX: ', 0
-pointer_asciiCx db 20 dup(0)
-
-pointer_asciiDxPrologue db 'DX: ', 0
-pointer_asciiDx db 20 dup(0)
-dumpGeneralRegisters:
+dumpAxRegister:
     mov dx, pointer_asciiAx
-    call populateAsciiDxPointer
-
-    mov ax, bx
-    mov dx, pointer_asciiBx
-    call populateAsciiDxPointer
-
-    mov ax, cx
-    mov dx, pointer_asciiCx
-    call populateAsciiDxPointer
-
-    mov ax, dx
-    mov dx, pointer_asciiDx
     call populateAsciiDxPointer
 
     mov si, pointer_asciiAxPrologue
     call print
     mov si, pointer_asciiAx
-    call print
-    mov si, defaultBreakline
-    call print
-
-    mov si, pointer_asciiBxPrologue
-    call print
-    mov si, pointer_asciiBx
-    call print
-    mov si, defaultBreakline
-    call print
-
-    mov si, pointer_asciiCxPrologue
-    call print
-    mov si, pointer_asciiCx
-    call print
-    mov si, defaultBreakline
-    call print
-
-    mov si, pointer_asciiDxPrologue
-    call print
-    mov si, pointer_asciiDx
     call print
     mov si, defaultBreakline
     call print
@@ -225,8 +183,9 @@ loader:
     ; Read disk parameters
     call populateDiskParameters
 
+    mov ax, [bpbNumberOfHeads]
     ; Test
-    call dumpGeneralRegisters
+    call dumpAxRegister
 
     cli
     hlt
