@@ -103,10 +103,20 @@ pointer_asciiCx db 20 dup(0)
 pointer_asciiDxPrologue db 'DX: ', 0
 pointer_asciiDx db 20 dup(0)
 dumpGeneralRegisters:
-    call populateAsciiAx
-    call populateAsciiBx
-    call populateAsciiCx
-    call populateAsciiDx
+    mov dx, pointer_asciiAx
+    call populateAsciiDxPointer
+
+    mov ax, bx
+    mov dx, pointer_asciiBx
+    call populateAsciiDxPointer
+
+    mov ax, cx
+    mov dx, pointer_asciiCx
+    call populateAsciiDxPointer
+
+    mov ax, dx
+    mov dx, pointer_asciiDx
+    call populateAsciiDxPointer
 
     mov si, pointer_asciiAxPrologue
     call print
@@ -136,12 +146,13 @@ dumpGeneralRegisters:
     mov si, defaultBreakline
     call print
 
-populateAsciiAx_pointer_tempArray db 16 dup(0)
-populateAsciiAx:
+    ret
+
+populateAsciiDxPointer_pointer_tempArray db 16 dup(0)
+populateAsciiDxPointer:
     xor cx, cx
-    mov si, populateAsciiAx_pointer_tempArray
-    populateAsciiAx_loop_binToAscii:
-        shr ax, cx
+    mov si, populateAsciiDxPointer_pointer_tempArray
+    populateAsciiDxPointer_loop_binToAscii:
         mov bx, ax
         and bx, 0000000000000001b
         add bl, 00110000b
@@ -149,59 +160,67 @@ populateAsciiAx:
 
         inc si
         inc cx
+        shr ax, 1
         cmp cx, 16
-        jne populateAsciiAx_loop_binToAscii
+
+        jne populateAsciiDxPointer_loop_binToAscii
     
-    mov dx, pointer_asciiAx
+    mov di, dx
     mov bx, 0
-    populateAsciiAx_loop_populateAsciiAx:
+    populateAsciiDxPointer_loop_populateAsciiDxPointer:
         dec si
         dec cx
-        js populateAsciiAx_loopEnd_populateAsciiAx
 
         mov al, [si]
-        mov [dx], al
+        mov [di], al
 
         cmp cx, 0
-        jz populateAsciiAx_loopEnd_populateAsciiAx
+        jz populateAsciiDxPointer_loopEnd_populateAsciiDxPointer
 
-        inc dx
+        inc di
 
         push ax
         push bx
         push cx
         push dx
+
         xor dx, dx
         mov ax, cx
         mov bx, 4
         div bx
         cmp dx, 0
-        pop ax
-        pop bx
-        pop cx
+
         pop dx
-        jne populateAsciiAx_loop_populateAsciiAx
+        pop cx
+        pop bx
+        pop ax
+        jne populateAsciiDxPointer_loop_populateAsciiDxPointer
 
         mov al, ' '
-        mov [dx], al
+        mov [di], al
 
-        inc dx
-        jmp populateAsciiAx_loop_populateAsciiAx
-    populateAsciiAx_loopEnd_populateAsciiAx:
-    mov bx, 0
-    mov [dx], bx
+        inc di
+        jmp populateAsciiDxPointer_loop_populateAsciiDxPointer
+    populateAsciiDxPointer_loopEnd_populateAsciiDxPointer:
+
+    inc di
+    mov bl, 0
+    mov [di], bl
     ret
 
 ;***********************************
 ;   Bootloader Entry Point
 ;***********************************
 
-welcomeMessage     db      "EPK!!!", 0
-defaultBreakline   db      "\n", 0
+welcomeMessage     db      "EPK!!!", 0xA, 0xD, 0
+defaultBreakline   db      0xA, 0xD, 0
 
 loader:
     ; Preparing OS environment
     call clearRegisters
+
+    mov si, welcomeMessage
+    call print
 
     ; Read disk parameters
     call populateDiskParameters
@@ -209,97 +228,5 @@ loader:
     ; Test
     call dumpGeneralRegisters
 
-    mov si, msg
-    call print
-
     cli
     hlt
-
-; Test populateAsciiAx
-global _start
-
-section .data
-populateAsciiAx_pointer_tempArray times 32 db 0
-pointer_asciiAxPrologue db 'AX: ', 0
-pointer_asciiAx times 40 db 0
-teste db 'teste', 0
-
-section .text
-
-populateAsciiAx:
-    xor ecx, ecx
-    mov esi, populateAsciiAx_pointer_tempArray
-    
-    populateAsciiAx_loop_binToAscii:
-        mov ebx, eax
-        and ebx, 00000000000000000000000000000001b
-        add bl, 00110000b
-        mov [esi], bl
-
-        inc esi
-        inc cl
-        shr eax, 1
-        cmp cl, 32
-    	
-        jne populateAsciiAx_loop_binToAscii
-        
-    mov edx, pointer_asciiAx
-    mov ebx, 0
-    populateAsciiAx_loop_populateAsciiAx:
-        dec esi
-        dec ecx
-
-        mov al, [esi]
-        mov [edx], al
-
-        cmp ecx, 0
-        je populateAsciiAx_loopEnd_populateAsciiAx
-		
-        inc edx
-        
-        push eax
-        push ebx
-        push ecx
-        push edx
-        
-        xor edx, edx
-        mov eax, ecx
-        mov ebx, 4
-        div ebx
-        cmp edx, 0
-        
-        pop edx
-        pop ecx
-        pop ebx
-        pop eax
-        jne populateAsciiAx_loop_populateAsciiAx
-
-        mov al, ' '
-        mov [edx], al
-
-        inc edx
-        jmp populateAsciiAx_loop_populateAsciiAx
-    populateAsciiAx_loopEnd_populateAsciiAx:
-	
-	inc edx
-    mov bl, 0
-    mov [edx], bl
-    
-    ret
-
-_start:
-	mov eax, 10111010001110011011101000111001b
-	call populateAsciiAx
-	
-	pusha
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, pointer_asciiAx
-    mov edx, 40
-    int 0x80
-    popa  
-
-exit:
-	mov		eax, 01h		; exit()
-	xor		ebx, ebx		; errno
-	int		80h
