@@ -40,9 +40,9 @@ start: jmp loader
 ;******************************
 ;   Disk parameters(int 13h, AH=08h)
 ;******************************
-numberOfHeads:      resb 1
-numberOfCylinders:  resb 2
-numberOfSectors:    resb 1
+numberOfHeads:      resb 1 ;10000010 10001010
+numberOfCylinders:  resb 2 ;
+numberOfSectors:    resb 1 ; 10101100 00001000
 
 ;******************************
 ;   Important addresses
@@ -102,7 +102,80 @@ ClearRegisters:
 
     ret
 
-;extern dumpAxRegister
+pointer_asciiAxPrologue db 'AX: ', 0
+pointer_asciiAx db 20 dup(0)
+dumpAxRegister:
+    mov dx, pointer_asciiAx
+    call populateAsciiDxPointer
+
+    mov si, pointer_asciiAxPrologue
+    call Print
+    mov si, pointer_asciiAx
+    call Print
+    mov si, defaultBreakline
+    call Print
+
+    ret
+
+populateAsciiDxPointer_pointer_tempArray db 16 dup(0)
+populateAsciiDxPointer:
+    xor cx, cx
+    mov si, populateAsciiDxPointer_pointer_tempArray
+    populateAsciiDxPointer_loop_binToAscii:
+        mov bx, ax
+        and bx, 0000000000000001b
+        add bl, 00110000b
+        mov [si], bl
+
+        inc si
+        inc cx
+        shr ax, 1
+        cmp cx, 16
+
+        jne populateAsciiDxPointer_loop_binToAscii
+    
+    mov di, dx
+    mov bx, 0
+    populateAsciiDxPointer_loop_populateAsciiDxPointer:
+        dec si
+        dec cx
+
+        mov al, [si]
+        mov [di], al
+
+        cmp cx, 0
+        jz populateAsciiDxPointer_loopEnd_populateAsciiDxPointer
+
+        inc di
+
+        push ax
+        push bx
+        push cx
+        push dx
+
+        xor dx, dx
+        mov ax, cx
+        mov bx, 4
+        div bx
+        cmp dx, 0
+
+        pop dx
+        pop cx
+        pop bx
+        pop ax
+        jne populateAsciiDxPointer_loop_populateAsciiDxPointer
+
+        mov al, ' '
+        mov [di], al
+
+        inc di
+        jmp populateAsciiDxPointer_loop_populateAsciiDxPointer
+    populateAsciiDxPointer_loopEnd_populateAsciiDxPointer:
+
+    inc di
+    mov bl, 0
+    mov [di], bl
+    ret
 
 ;***********************************
 ;   Bootloader Entry Point
@@ -122,21 +195,16 @@ loader:
     ; Read disk parameters
     call PopulateDiskParameters
 
-    mov ah, 02h
-    mov al, [bpbSectorsPerCluster]
+    mov ax, [numberOfCylinders]
+    call dumpAxRegister
+    xor ax, ax
+    
+    mov al, [numberOfHeads]
+    call dumpAxRegister
 
-    mov cl, [peFirstSectorCHS + 1]
-    and cl, 00111111b
-
-    mov ch, [peFirstSectorCHS + 2]
-
-    mov dh, [peFirstSectorCHS]
-
-    mov dl, 80h
-    mov es, [FATSegmentES]
-    xor bx, bx
-    int 13h
-
+    xor ax, ax
+    mov al, [numberOfSectors]
+    call dumpAxRegister
 
     cli
     hlt
@@ -153,3 +221,14 @@ peType:             resb 1
 peLastSectorCHS:    resb 3
 peFirstSectorLBA:   resb 4
 peNumberOfSectors:  resb 4
+
+;qemu-system-i386                                 \
+;  -accel tcg,thread=single                       \
+;  -cpu core2duo                                  \
+;  -m 128                                         \
+;  -no-reboot                                     \
+;  -drive format=raw,media=cdrom,file=hashidaOS.iso    \
+;  -serial stdio                                  \
+;  -smp 1                                         \
+;  -usb                                           \
+;  -vga std
