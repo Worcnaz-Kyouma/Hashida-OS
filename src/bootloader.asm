@@ -137,7 +137,6 @@ loader:
     xor bx, bx
     int 13h
 
-
     cli
     hlt
 
