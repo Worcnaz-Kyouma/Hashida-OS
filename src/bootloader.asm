@@ -122,21 +122,6 @@ loader:
     ; Read disk parameters
     call PopulateDiskParameters
 
-    mov ah, 02h
-    mov al, [bpbSectorsPerCluster]
-
-    mov cl, [peFirstSectorCHS + 1]
-    and cl, 00111111b
-
-    mov ch, [peFirstSectorCHS + 2]
-
-    mov dh, [peFirstSectorCHS]
-
-    mov dl, 80h
-    mov es, [FATSegmentES]
-    xor bx, bx
-    int 13h
-
     cli
     hlt
 
@@ -146,9 +131,9 @@ times 446 - ($-$$) db 0
 ;   MBR: Partition entry nº1, will be populated
 ;   in the build of the system
 ;***********************************
-peStatus:           resb 1
-peFirstSectorCHS:   resb 3
-peType:             resb 1
-peLastSectorCHS:    resb 3
-peFirstSectorLBA:   resb 4
-peNumberOfSectors:  resb 4
+;peStatus:           resb 1
+;peFirstSectorCHS:   resb 3
+;peType:             resb 1
+;peLastSectorCHS:    resb 3
+;peFirstSectorLBA:   resb 4
+;peNumberOfSectors:  resb 4
