@@ -1,5 +1,5 @@
 NASMPARAMS = -f bin
-FAT16_PARAMS = -F 16
+FAT_PARAMS = -F 16
 DISK_SIZE = 1024
 
 bin/%.bin: src/%.asm
@@ -13,7 +13,7 @@ bin/bootloader.img: bin/bootloader.bin bin/stg.bin
 
 	sudo losetup -fP $@
 
-	sudo mkfs.vfat $(FAT16_PARAMS) /dev/loop0p1
+	sudo mkfs.vfat $(FAT_PARAMS) /dev/loop0p1
 
 	sudo mkdir /mnt/tempdisk
 	sudo mount /dev/loop0p1 /mnt/tempdisk
