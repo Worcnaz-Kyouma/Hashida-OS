@@ -193,18 +193,31 @@ loader:
         jc reset
 
     ; Read disk parameters
-    call PopulateDiskParameters
+    ; call PopulateDiskParameters
 
-    mov ax, [numberOfCylinders]
-    call dumpAxRegister
     xor ax, ax
+    mov es, ax
+    mov di, ax
+    mov ah, 08h
+    mov dl, 80h
+    int 13h
+
+    pusha
+    mov ax, cx
+    call dumpAxRegister
+    popa
     
-    mov al, [numberOfHeads]
-    call dumpAxRegister
-
+    pusha
     xor ax, ax
-    mov al, [numberOfSectors]
+    mov al, dh
     call dumpAxRegister
+    popa
+
+    pusha
+    xor ax, ax
+    mov al, cl
+    call dumpAxRegister
+    popa
 
     cli
     hlt
