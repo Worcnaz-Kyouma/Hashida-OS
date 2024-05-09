@@ -1,6 +1,5 @@
 pointer_asciiAxPrologue db 'AX: ', 0
 pointer_asciiAx db 20 dup(0)
-global dumpAxRegister
 dumpAxRegister:
     mov dx, pointer_asciiAx
     call populateAsciiDxPointer
