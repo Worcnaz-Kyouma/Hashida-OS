@@ -1,23 +1,23 @@
 pointer_asciiAxPrologue db 'AX: ', 0
 pointer_asciiAx db 20 dup(0)
-dumpAxRegister:
+DumpAxRegister:
     mov dx, pointer_asciiAx
-    call populateAsciiDxPointer
+    call PopulateAsciiDxPointer
 
     mov si, pointer_asciiAxPrologue
-    call print
+    call Print
     mov si, pointer_asciiAx
-    call print
+    call Print
     mov si, defaultBreakline
-    call print
+    call Print
 
     ret
 
-populateAsciiDxPointer_pointer_tempArray db 16 dup(0)
-populateAsciiDxPointer:
+PopulateAsciiDxPointer_pointer_tempArray db 16 dup(0)
+PopulateAsciiDxPointer:
     xor cx, cx
-    mov si, populateAsciiDxPointer_pointer_tempArray
-    populateAsciiDxPointer_loop_binToAscii:
+    mov si, PopulateAsciiDxPointer_pointer_tempArray
+    PopulateAsciiDxPointer_loop_binToAscii:
         mov bx, ax
         and bx, 0000000000000001b
         add bl, 00110000b
@@ -28,11 +28,11 @@ populateAsciiDxPointer:
         shr ax, 1
         cmp cx, 16
 
-        jne populateAsciiDxPointer_loop_binToAscii
+        jne PopulateAsciiDxPointer_loop_binToAscii
     
     mov di, dx
     mov bx, 0
-    populateAsciiDxPointer_loop_populateAsciiDxPointer:
+    PopulateAsciiDxPointer_loop_PopulateAsciiDxPointer:
         dec si
         dec cx
 
@@ -40,7 +40,7 @@ populateAsciiDxPointer:
         mov [di], al
 
         cmp cx, 0
-        jz populateAsciiDxPointer_loopEnd_populateAsciiDxPointer
+        jz PopulateAsciiDxPointer_loopEnd_PopulateAsciiDxPointer
 
         inc di
 
@@ -59,14 +59,14 @@ populateAsciiDxPointer:
         pop cx
         pop bx
         pop ax
-        jne populateAsciiDxPointer_loop_populateAsciiDxPointer
+        jne PopulateAsciiDxPointer_loop_PopulateAsciiDxPointer
 
         mov al, ' '
         mov [di], al
 
         inc di
-        jmp populateAsciiDxPointer_loop_populateAsciiDxPointer
-    populateAsciiDxPointer_loopEnd_populateAsciiDxPointer:
+        jmp PopulateAsciiDxPointer_loop_PopulateAsciiDxPointer
+    PopulateAsciiDxPointer_loopEnd_PopulateAsciiDxPointer:
 
     inc di
     mov bl, 0
