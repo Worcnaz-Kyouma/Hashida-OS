@@ -48,8 +48,8 @@ numberOfSectors:    resb 1
 ;******************************
 ;   Important addresses
 ;******************************
-FATSegmentES:           db 0x0000
-rootDirectoryOffset:    db 0x0200
+FATSegmentES:           dw 0x0000
+rootDirectoryOffset:    dw 0x0200
 
 ;******************************
 ; Functions
@@ -157,10 +157,14 @@ ParseLBAtoCHS:
 ;   Bootloader Entry Point
 ;***********************************
 
-welcomeMessage     db      "EPK!!!", 0xA, 0xD, 0
+welcomeMessage     db      "Welcome to HashidaOS, my build from scratch operational system. El Psy Kongroo.", 0xA, 0xD, 0
 defaultBreakline   db      0xA, 0xD, 0
 
 loader:
+    ; ds:welcomeMessage
+    mov si, welcomeMessage
+    call Print
+
     ; Preparing OS environment
     call ClearRegisters
 
@@ -171,17 +175,20 @@ loader:
     ; Read disk parameters
     call PopulateDiskParameters
 
-    mov dx, bpbHiddenSectors
+    mov dx, [bpbHiddenSectors]
 
-    mov ax, bpbSectorsPerFAT
-    mov bx, bpbNumberOfFATs
+    mov ax, [bpbSectorsPerFAT]
+    mov bx, [bpbNumberOfFATs]
     mul bx
 
     add dx, ax
 
     mov ax, [bpbRootDirEntries]
-    mul 32
-    div 512
+    mov bx, 32
+    mul bx
+    mov bx, 512
+    div bx
+    inc ax
 
     mov bx, ax
     mov ax, dx ; Root LBA
@@ -191,7 +198,11 @@ loader:
 
     mov ah, 02h
     mov al, dl
-    mov dl, driveNumber
+    mov dl, [driveNumber]
+    mov bx, 0x7c00
+    mov es, bx
+    mov bx, [rootDirectoryOffset]
+    int 13h
 
     cli
     hlt
