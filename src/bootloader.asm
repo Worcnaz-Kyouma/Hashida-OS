@@ -171,16 +171,27 @@ loader:
     ; Read disk parameters
     call PopulateDiskParameters
 
-    mov ax, 133h
+    mov dx, bpbHiddenSectors
+
+    mov ax, bpbSectorsPerFAT
+    mov bx, bpbNumberOfFATs
+    mul bx
+
+    add dx, ax
+
+    mov ax, [bpbRootDirEntries]
+    mul 32
+    div 512
+
+    mov bx, ax
+    mov ax, dx ; Root LBA
+    mov dx, bx ; Root size
+
     call ParseLBAtoCHS
 
-    mov ax, cx
-    pusha
-    call DumpAxRegister
-    popa
-
-    mov ax, dx
-    call DumpAxRegister
+    mov ah, 02h
+    mov al, dl
+    mov dl, driveNumber
 
     cli
     hlt
