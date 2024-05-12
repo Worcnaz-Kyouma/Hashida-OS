@@ -49,12 +49,43 @@ numberOfSectors:    resb 1
 ;   Important values
 ;******************************
 FATSegmentES:           dw 0x0000
-rootDirectoryOffset:    dw 0x0200
+rootDirectoryOffset:    dw 0x0500
 stage2Name              db "STAGE2  BIN"
+stage2Offset:           dw 0x1000
 
 ;******************************
 ; Functions
 ;******************************
+pointer_asciiAxPrologue db 'AX: ', 0
+pointer_asciiAx db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0
+DumpAxRegister:
+    lea si, pointer_asciiAx
+    add si, 18
+    mov cx, 19
+    PopulateAsciiPointer_loop_PopulateAsciiPointer:
+        mov bl, [si]
+        cmp bl, 0x20
+        je PopulateAsciiPointer_loop_PopulateAsciiPointerEnd
+
+        mov bx, ax
+        and bx, 0000000000000001b
+        add bl, 00110000b
+        mov [si], bl
+
+        shr ax, 1
+        PopulateAsciiPointer_loop_PopulateAsciiPointerEnd:
+        dec si
+        loop PopulateAsciiPointer_loop_PopulateAsciiPointer
+
+    mov si, pointer_asciiAxPrologue
+    call Print
+    mov si, pointer_asciiAx
+    call Print
+    mov si, defaultBreakline
+    call Print
+
+    ret
+    
 Print:
     lodsb
     or al,al
@@ -158,25 +189,23 @@ ParseLBAtoCHS:
     ret
 
 ReadRootDirectory:
-    mov dx, [bpbHiddenSectors]
-
-    mov ax, [bpbSectorsPerFAT]
-    mov bx, [bpbNumberOfFATs]
-    mul bx
-
-    add dx, ax
-
+    
     mov ax, [bpbRootDirEntries]
     mov bx, 32
     mul bx
     mov bx, 512
     div bx
     inc ax
+    push ax ; Root size
 
-    mov bx, ax ; Root size
-    push bx
+    mov cx, [bpbReservedSectors]
+    mov al, [bpbNumberOfFATs]
+    mov bx, [bpbSectorsPerFAT]
+    mul bx
 
-    mov ax, dx ; Root LBA
+    add cx, ax
+
+    mov ax, cx ; Root LBA
     call ParseLBAtoCHS
 
     pop bx
@@ -184,22 +213,47 @@ ReadRootDirectory:
     mov ah, 02h
     mov al, bl
     mov dl, [driveNumber]
-    mov bx, 0x7c00
+    xor bx, bx
     mov es, bx
     mov bx, [rootDirectoryOffset]
     int 13h
 
     ret
+FindSecondStageDone:
+    ret
+FindSecondStage:
+    mov cx, [bpbRootDirEntries]
+
+    mov di, [rootDirectoryOffset]
+
+    lea si, stage2Name
+    FindSecondStage_loop_findFileSi:
+        push si
+        push cx
+        push di
+
+        mov cx, 11 ; 11 Repeats
+        rep cmpsb
+
+        pop di
+        je FindSecondStageDone
+
+        add di, 32
+        pop cx
+
+        pop si
+        loop FindSecondStage_loop_findFileSi
+        jmp error
 ;***********************************
 ;   Bootloader Entry Point
 ;***********************************
 
 welcomeMessage     db      "Welcome", 0xA, 0xD, 0
 defaultBreakline   db      0xA, 0xD, 0
-diskErrorMessage   db      "Disk Err", 0
+errorMessage   db      "Error", 0
 
-diskError:
-    mov si, diskErrorMessage
+error:
+    mov si, errorMessage
     call Print
 
     cli 
@@ -219,14 +273,20 @@ loader:
 
     ; Read disk parameters
     call PopulateDiskParameters
-    jc diskError
+    jc error
 
     ; Read root directory in rootDirectoryOffset
     call ReadRootDirectory
-    jc diskError
+    jc error
 
-    mov di, [rootDirectoryOffset]
-    add di, 64 ; Jump the self and parent entry
+    mov bx, [rootDirectoryOffset]
+    mov ax, [bx]
+    call DumpAxRegister
+    ; call FindSecondStage
+
+    ; call LoadFile
+
+    ; jmp [stage2Offset]
 
     cli
     hlt

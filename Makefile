@@ -6,7 +6,7 @@ bin/%.bin: src/%.asm
 	mkdir -p bin
 	nasm $(NASMPARAMS) $< -o $@
 
-bin/bootloader.img: bin/bootloader.bin bin/stg.bin
+bin/bootloader.img: bin/bootloader.bin bin/stage2.bin
 	dd if=/dev/zero of=$@ bs=1024 count=$(DISK_SIZE) status=progress
 
 	sudo mkfs.vfat $(FAT_PARAMS) $@
