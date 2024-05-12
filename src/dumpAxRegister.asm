@@ -1,3 +1,4 @@
+; Decrease the size of it, maybe by make a join into these loops
 pointer_asciiAxPrologue db 'AX: ', 0
 pointer_asciiAx db 20 dup(0)
 DumpAxRegister:

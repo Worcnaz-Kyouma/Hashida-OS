@@ -46,10 +46,11 @@ numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
 
 ;******************************
-;   Important addresses
+;   Important values
 ;******************************
 FATSegmentES:           dw 0x0000
 rootDirectoryOffset:    dw 0x0200
+stage2Name              db "STAGE2  BIN"
 
 ;******************************
 ; Functions
@@ -106,6 +107,8 @@ ClearRegisters:
     ret
 
 ParseLBAtoCHS:
+    ; Cylinder is 10 bits, could be a good choice to improve the procedure with that logic, making Sector 6 bits, cause we didnt know that when implemented this.
+
     mov cx, ax ;CX = LBA
     
     xor ax, ax
@@ -153,28 +156,8 @@ ParseLBAtoCHS:
     mov ch, al
 
     ret
-;***********************************
-;   Bootloader Entry Point
-;***********************************
 
-welcomeMessage     db      "Welcome to HashidaOS, my build from scratch operational system. El Psy Kongroo.", 0xA, 0xD, 0
-defaultBreakline   db      0xA, 0xD, 0
-
-loader:
-    ; ds:welcomeMessage
-    mov si, welcomeMessage
-    call Print
-
-    ; Preparing OS environment
-    call ClearRegisters
-
-    reset:
-        call ResetDiskSystem
-        jc reset
-
-    ; Read disk parameters
-    call PopulateDiskParameters
-
+ReadRootDirectory:
     mov dx, [bpbHiddenSectors]
 
     mov ax, [bpbSectorsPerFAT]
@@ -190,19 +173,60 @@ loader:
     div bx
     inc ax
 
-    mov bx, ax
-    mov ax, dx ; Root LBA
-    mov dx, bx ; Root size
+    mov bx, ax ; Root size
+    push bx
 
+    mov ax, dx ; Root LBA
     call ParseLBAtoCHS
 
+    pop bx
+
     mov ah, 02h
-    mov al, dl
+    mov al, bl
     mov dl, [driveNumber]
     mov bx, 0x7c00
     mov es, bx
     mov bx, [rootDirectoryOffset]
     int 13h
+
+    ret
+;***********************************
+;   Bootloader Entry Point
+;***********************************
+
+welcomeMessage     db      "Welcome", 0xA, 0xD, 0
+defaultBreakline   db      0xA, 0xD, 0
+diskErrorMessage   db      "Disk Err", 0
+
+diskError:
+    mov si, diskErrorMessage
+    call Print
+
+    cli 
+    hlt
+
+loader:
+    ; ds:welcomeMessage
+    mov si, welcomeMessage
+    call Print
+
+    ; Preparing OS environment
+    call ClearRegisters
+
+    reset:
+        call ResetDiskSystem
+        jc reset
+
+    ; Read disk parameters
+    call PopulateDiskParameters
+    jc diskError
+
+    ; Read root directory in rootDirectoryOffset
+    call ReadRootDirectory
+    jc diskError
+
+    mov di, [rootDirectoryOffset]
+    add di, 64 ; Jump the self and parent entry
 
     cli
     hlt
