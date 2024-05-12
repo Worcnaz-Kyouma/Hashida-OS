@@ -279,10 +279,8 @@ loader:
     call ReadRootDirectory
     jc error
 
-    mov bx, [rootDirectoryOffset]
-    mov ax, [bx]
-    call DumpAxRegister
-    ; call FindSecondStage
+    ; Return in DI the offset of stage 2 entry
+    call FindSecondStage
 
     ; call LoadFile
 
