@@ -48,7 +48,7 @@ numberOfSectors:    resb 1
 ;******************************
 ;   Important values
 ;******************************
-FATSegmentES:           dw 0x0000
+FATSegmentES:           dw 0x4434
 rootDirectoryOffset:    dw 0x0500
 rootDirStart:           resb 2
 stage2Name              db "STAGE2  BIN"
@@ -57,36 +57,6 @@ stage2Offset:           dw 0x1000
 ;******************************
 ; Functions
 ;******************************
-pointer_asciiAxPrologue db 'AX: ', 0
-pointer_asciiAx db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0
-DumpAxRegister:
-    lea si, pointer_asciiAx
-    add si, 18
-    mov cx, 19
-    PopulateAsciiPointer_loop_PopulateAsciiPointer:
-        mov bl, [si]
-        cmp bl, 0x20
-        je PopulateAsciiPointer_loop_PopulateAsciiPointerEnd
-
-        mov bx, ax
-        and bx, 0000000000000001b
-        add bl, 00110000b
-        mov [si], bl
-
-        shr ax, 1
-        PopulateAsciiPointer_loop_PopulateAsciiPointerEnd:
-        dec si
-        loop PopulateAsciiPointer_loop_PopulateAsciiPointer
-
-    mov si, pointer_asciiAxPrologue
-    call Print
-    mov si, pointer_asciiAx
-    call Print
-    mov si, defaultBreakline
-    call Print
-
-    ret
-    
 Print:
     lodsb
     or al,al
@@ -124,17 +94,6 @@ PopulateDiskParameters:
 
     inc dh
     mov [numberOfHeads], dh
-
-    ret
-
-ClearRegisters:
-    xor ax, ax
-    xor bx, bx
-    xor cx, cx
-    xor dx, dx
-
-    xor si, si
-    xor di, di
 
     ret
 
@@ -247,19 +206,32 @@ FindSecondStage:
 FindSecondStageDone:
     ret
 
+LoadFat:
+    mov ah, 02h
+    mov al, 0xFF
+    mov ch, 0
+    mov cl, 2
+    mov dh, 0
+    mov dl, [driveNumber]
+    mov es, [FATSegmentES]
+    mov bx, 0
+
+    ret
+
 LoadFile:
-    mov si, [di + 26] ; First cluster number
+    mov ax, [di + 26] ; First cluster number
 
     call LoadFat
+    mov es, [FATSegmentES]
+
     LoadFile_loop_ReadFile:
-        mov ax, si
         cmp ax, 0xFFF8
         jge LoadFile_loopEnd_ReadFile
 
         cmp ax, 0x0002
-        jle LoadFile_loopError_ClusterRead
+        jle error
         cmp ax, 0xFFF7
-        je LoadFile_loopError_ClusterRead
+        je error
 
         ; Read sectors of cluster in memory
         mov ax, [bpbRootDirEntries]
@@ -292,17 +264,47 @@ LoadFile:
         int 13h
 
         ; Read the next cluster and save into si
-        mov si, [FATSegmentES]:ax
+        mov si, ax
+        mov ax, [si]
 
         jmp LoadFile_loop_ReadFile
+LoadFile_loopEnd_ReadFile:
+    ret
 
+pointer_asciiAxPrologue db 'AX: ', 0
+pointer_asciiAx db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0xA, 0xD, 0
+DumpAxRegister:
+    lea si, pointer_asciiAx
+    add si, 18
+    mov cx, 19
+    PopulateAsciiPointer_loop_PopulateAsciiPointer:
+        mov bl, [si]
+        cmp bl, 0x20
+        je PopulateAsciiPointer_loop_PopulateAsciiPointerEnd
+
+        mov bx, ax
+        and bx, 0000000000000001b
+        add bl, 00110000b
+        mov [si], bl
+
+        shr ax, 1
+        PopulateAsciiPointer_loop_PopulateAsciiPointerEnd:
+        dec si
+        loop PopulateAsciiPointer_loop_PopulateAsciiPointer
+
+    mov si, pointer_asciiAxPrologue
+    call Print
+    mov si, pointer_asciiAx
+    call Print
+    mov si, defaultBreakline
+    call Print
+
+    ret
 ;***********************************
 ;   Bootloader Entry Point
 ;***********************************
 
-welcomeMessage     db      "Welcome", 0xA, 0xD, 0
-defaultBreakline   db      0xA, 0xD, 0
-errorMessage   db      "Error", 0
+errorMessage   db      "Err", 0
 
 error:
     mov si, errorMessage
@@ -312,12 +314,11 @@ error:
     hlt
 
 loader:
-    ; ds:welcomeMessage
-    mov si, welcomeMessage
-    call Print
 
     ; Preparing OS environment
-    call ClearRegisters
+    xor ax, ax
+    mov dx, ax
+    mov es, ax
 
     reset:
         call ResetDiskSystem
@@ -334,12 +335,12 @@ loader:
     ; Return in DI the offset of stage 2 entry
     call FindSecondStage
 
+    ; Read file into stage2Offset
     call LoadFile
 
-    ; jmp [stage2Offset]
 
-    cli
-    hlt
+    ; Jump to that code
+    jmp [stage2Offset]
 
 times 510 - ($-$$) db 0
 dw 0xAA55

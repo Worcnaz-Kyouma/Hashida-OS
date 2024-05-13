@@ -26,3 +26,6 @@ code:
     xor ax, ax
     mov dx, ax
     mov es, ax
+
+    mov si, msg
+    call print
