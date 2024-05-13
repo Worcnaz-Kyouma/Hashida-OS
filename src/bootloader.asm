@@ -219,8 +219,6 @@ ReadRootDirectory:
     int 13h
 
     ret
-FindSecondStageDone:
-    ret
 FindSecondStage:
     mov cx, [bpbRootDirEntries]
 
@@ -244,6 +242,21 @@ FindSecondStage:
         pop si
         loop FindSecondStage_loop_findFileSi
         jmp error
+FindSecondStageDone:
+    ret
+
+LoadFile:
+    mov si, [di + 26] ; First cluster number
+    LoadFile_loop_ReadFile:
+        mov ax, [FATSegmentES]:si
+        cmp ax, 0xFFF8
+        jge LoadFile_loop_ReadFileEnd
+        cmp ax, 0x0000
+        je LoadFat
+        
+
+        loop LoadFile_loop_ReadFile
+
 ;***********************************
 ;   Bootloader Entry Point
 ;***********************************
@@ -282,7 +295,7 @@ loader:
     ; Return in DI the offset of stage 2 entry
     call FindSecondStage
 
-    ; call LoadFile
+    call LoadFile
 
     ; jmp [stage2Offset]
 
