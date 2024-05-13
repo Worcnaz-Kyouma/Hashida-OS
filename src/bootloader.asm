@@ -50,6 +50,7 @@ numberOfSectors:    resb 1
 ;******************************
 FATSegmentES:           dw 0x0000
 rootDirectoryOffset:    dw 0x0500
+rootDirStart:           resb 2
 stage2Name              db "STAGE2  BIN"
 stage2Offset:           dw 0x1000
 
@@ -206,6 +207,7 @@ ReadRootDirectory:
     add cx, ax
 
     mov ax, cx ; Root LBA
+    mov [rootDirStart], ax
     call ParseLBAtoCHS
 
     pop bx
@@ -247,15 +249,52 @@ FindSecondStageDone:
 
 LoadFile:
     mov si, [di + 26] ; First cluster number
-    LoadFile_loop_ReadFile:
-        mov ax, [FATSegmentES]:si
-        cmp ax, 0xFFF8
-        jge LoadFile_loop_ReadFileEnd
-        cmp ax, 0x0000
-        je LoadFat
-        
 
-        loop LoadFile_loop_ReadFile
+    call LoadFat
+    LoadFile_loop_ReadFile:
+        mov ax, si
+        cmp ax, 0xFFF8
+        jge LoadFile_loopEnd_ReadFile
+
+        cmp ax, 0x0002
+        jle LoadFile_loopError_ClusterRead
+        cmp ax, 0xFFF7
+        je LoadFile_loopError_ClusterRead
+
+        ; Read sectors of cluster in memory
+        mov ax, [bpbRootDirEntries]
+        mov bx, 32
+        mul ax
+        mov bx, [bpbBytesPerSector]
+        div bx
+        inc ax
+
+        mov cx, [rootDirStart]
+        add cx, ax
+        ; mov [dataRegionStart], cx
+
+        mov dx, ax
+        sub ax, 2
+        xor bx, bx
+        mov bl, [bpbSectorsPerCluster]
+        mul bx
+
+        add ax, cx
+
+        call ParseLBAtoCHS
+
+        mov ah, 02h
+        mov al, [bpbSectorsPerCluster]
+        mov dl, [driveNumber]
+        xor bx, bx
+        mov es, bx
+        mov bx, [stage2Offset]
+        int 13h
+
+        ; Read the next cluster and save into si
+        mov si, [FATSegmentES]:ax
+
+        jmp LoadFile_loop_ReadFile
 
 ;***********************************
 ;   Bootloader Entry Point
