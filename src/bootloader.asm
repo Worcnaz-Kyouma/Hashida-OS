@@ -48,11 +48,11 @@ numberOfSectors:    resb 1
 ;******************************
 ;   Important values
 ;******************************
-FATSegmentES:           dw 0x4434
-rootDirectoryOffset:    dw 0x0500
+; FATSegmentES:           dw 0x4434
+; rootDirectoryOffset:    dw 0x0500
 rootDirStart:           resb 2
 stage2Name              db "STAGE2  BIN"
-stage2Offset:           dw 0x1000
+; stage2Offset:           dw 0x1000
 
 ;******************************
 ; Functions
@@ -100,51 +100,37 @@ PopulateDiskParameters:
 ParseLBAtoCHS:
     ; Cylinder is 10 bits, could be a good choice to improve the procedure with that logic, making Sector 6 bits, cause we didnt know that when implemented this.
 
-    mov cx, ax ;CX = LBA
+    ; CX = LBA
     
-    xor ax, ax
+    ; Sector + Head calculation
+    mov ax, cx
+
+    xor dx, dx
+    movzx bx, byte [numberOfSectors]
+    div bx
+
+    inc dx
+    push dx ; Sector
+    
+    xor dx,dx
+    movzx bx, byte [numberOfHeads]
+    div bx
+
+    push dx ; Head
+    
+    ; Cylinder calculation
     mov al, [numberOfHeads]
-    xor bx, bx
     mov bl, [numberOfSectors]
-    mul bx
+    mul bl
     mov bx, ax
 
     mov ax, cx
     xor dx, dx
-    
-    div bx
-    push ax ; Cylinder
-
-    mov ax, cx
-    xor dx, dx
-
-    xor bx, bx
-    mov bl, [numberOfSectors]
     div bx
 
-    xor dx, dx
-
-    xor bx, bx
-    mov bl, [numberOfHeads]
-    div bx
-
-    push dx ; Head
-
-    mov ax, cx
-
-    xor dx, dx
-    xor bx, bx
-    mov bl, [numberOfSectors]
-    div bx 
-    
-    inc dx
-
-    push dx ; Sector
-
-    pop cx
-    pop dx
-    pop ax
-    mov ch, al
+    pop dx ; Head
+    pop cx ; Sector(CL)
+    mov ch, al ; Cylinder
 
     ret
 
@@ -165,8 +151,7 @@ ReadRootDirectory:
 
     add cx, ax
 
-    mov ax, cx ; Root LBA
-    mov [rootDirStart], ax
+    mov [rootDirStart], cx
     call ParseLBAtoCHS
 
     pop bx
@@ -176,14 +161,14 @@ ReadRootDirectory:
     mov dl, [driveNumber]
     xor bx, bx
     mov es, bx
-    mov bx, [rootDirectoryOffset]
+    mov bx, 0x0500
     int 13h
 
     ret
 FindSecondStage:
     mov cx, [bpbRootDirEntries]
 
-    mov di, [rootDirectoryOffset]
+    mov di, 0x0500
 
     lea si, stage2Name
     FindSecondStage_loop_findFileSi:
@@ -213,8 +198,9 @@ LoadFat:
     mov cl, 2
     mov dh, 0
     mov dl, [driveNumber]
-    mov es, [FATSegmentES]
-    mov bx, 0
+    mov bx, 0x4434
+    mov es, bx
+    xor bx, bx
 
     ret
 
@@ -222,7 +208,8 @@ LoadFile:
     mov ax, [di + 26] ; First cluster number
 
     call LoadFat
-    mov es, [FATSegmentES]
+    mov bx, 0x4434
+    mov es, bx
 
     LoadFile_loop_ReadFile:
         cmp ax, 0xFFF8
@@ -251,7 +238,7 @@ LoadFile:
         mov bl, [bpbSectorsPerCluster]
         mul bx
 
-        add ax, cx
+        add cx, ax
 
         call ParseLBAtoCHS
 
@@ -260,7 +247,7 @@ LoadFile:
         mov dl, [driveNumber]
         xor bx, bx
         mov es, bx
-        mov bx, [stage2Offset]
+        mov bx, 0x1000
         int 13h
 
         ; Read the next cluster and save into si
@@ -271,7 +258,6 @@ LoadFile:
 LoadFile_loopEnd_ReadFile:
     ret
 
-pointer_asciiAxPrologue db 'AX: ', 0
 pointer_asciiAx db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0xA, 0xD, 0
 DumpAxRegister:
     lea si, pointer_asciiAx
@@ -292,11 +278,7 @@ DumpAxRegister:
         dec si
         loop PopulateAsciiPointer_loop_PopulateAsciiPointer
 
-    mov si, pointer_asciiAxPrologue
-    call Print
     mov si, pointer_asciiAx
-    call Print
-    mov si, defaultBreakline
     call Print
 
     ret
@@ -338,9 +320,8 @@ loader:
     ; Read file into stage2Offset
     call LoadFile
 
-
     ; Jump to that code
-    jmp [stage2Offset]
+    jmp 0x1000
 
 times 510 - ($-$$) db 0
 dw 0xAA55
