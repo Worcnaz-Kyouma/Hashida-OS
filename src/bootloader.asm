@@ -170,9 +170,8 @@ FindSecondStage:
 
     mov di, 0x0500
 
-    lea si, stage2Name
     FindSecondStage_loop_findFileSi:
-        push si
+        lea si, stage2Name
         push cx
         push di
 
@@ -180,12 +179,11 @@ FindSecondStage:
         rep cmpsb
 
         pop di
+        pop cx
         je FindSecondStageDone
 
         add di, 32
-        pop cx
 
-        pop si
         loop FindSecondStage_loop_findFileSi
         jmp error
 FindSecondStageDone:
@@ -193,7 +191,7 @@ FindSecondStageDone:
 
 LoadFat:
     mov ah, 02h
-    mov al, 0xFF
+    mov al, 127
     mov ch, 0
     mov cl, 2
     mov dh, 0
@@ -201,60 +199,80 @@ LoadFat:
     mov bx, 0x4434
     mov es, bx
     xor bx, bx
-
+    int 13h
     ret
 
 LoadFile:
+    call LoadFat
     mov ax, [di + 26] ; First cluster number
 
-    call LoadFat
+    movzx ax, byte [bpbMediaDescType]
+    call DumpAxRegister
+    
     mov bx, 0x4434
     mov es, bx
 
-    LoadFile_loop_ReadFile:
-        cmp ax, 0xFFF8
-        jge LoadFile_loopEnd_ReadFile
+    mov ax, es:[0x0]
+    call DumpAxRegister
+    mov ax, es:[0x2]
+    call DumpAxRegister
+    mov ax, es:[0x4]
+    call DumpAxRegister
+    mov ax, es:[0x6]
+    call DumpAxRegister
+    mov ax, es:[0x8]
+    call DumpAxRegister
+    mov ax, es:[0x10]
+    call DumpAxRegister
+    ; LoadFile_loop_ReadFile:
+    ;     xor bx, bx
+    ;     mov es, bx
+        
+    ;     cmp ax, 0xFFF8
+    ;     jae LoadFile_loopEnd_ReadFile
 
-        cmp ax, 0x0002
-        jle error
-        cmp ax, 0xFFF7
-        je error
+    ;     cmp ax, 0x0002
+    ;     jbe error
+    ;     cmp ax, 0xFFF7
+    ;     je error
 
-        ; Read sectors of cluster in memory
-        mov ax, [bpbRootDirEntries]
-        mov bx, 32
-        mul ax
-        mov bx, [bpbBytesPerSector]
-        div bx
-        inc ax
+    ;     ; Read sectors of cluster in memory
+    ;     mov ax, [bpbRootDirEntries]
+    ;     mov bx, 32
+    ;     mul ax
+    ;     mov bx, [bpbBytesPerSector]
+    ;     div bx
+    ;     inc ax
 
-        mov cx, [rootDirStart]
-        add cx, ax
-        ; mov [dataRegionStart], cx
+    ;     mov cx, [rootDirStart]
+    ;     add cx, ax
 
-        mov dx, ax
-        sub ax, 2
-        xor bx, bx
-        mov bl, [bpbSectorsPerCluster]
-        mul bx
+    ;     mov dx, ax
+    ;     sub ax, 2
+    ;     xor bx, bx
+    ;     mov bl, [bpbSectorsPerCluster]
+    ;     mul bx
 
-        add cx, ax
+    ;     add cx, ax
 
-        call ParseLBAtoCHS
+    ;     call ParseLBAtoCHS
 
-        mov ah, 02h
-        mov al, [bpbSectorsPerCluster]
-        mov dl, [driveNumber]
-        xor bx, bx
-        mov es, bx
-        mov bx, 0x1000
-        int 13h
+    ;     mov ah, 02h
+    ;     mov al, [bpbSectorsPerCluster]
+    ;     mov dl, [driveNumber]
+    ;     xor bx, bx
+    ;     mov es, bx
+    ;     mov bx, 0x1000
+    ;     int 13h
 
-        ; Read the next cluster and save into si
-        mov si, ax
-        mov ax, [si]
+    ;     ; Read the next cluster and save into si
+    ;     mov bx, 0x4434
+    ;     mov es, bx
 
-        jmp LoadFile_loop_ReadFile
+    ;     mov si, ax
+    ;     mov ax, [si]
+
+    ;     jmp LoadFile_loop_ReadFile
 LoadFile_loopEnd_ReadFile:
     ret
 
@@ -321,7 +339,7 @@ loader:
     call LoadFile
 
     ; Jump to that code
-    jmp 0x1000
+    ; jmp 0x1000
 
 times 510 - ($-$$) db 0
 dw 0xAA55

@@ -29,3 +29,4 @@ code:
 
     mov si, msg
     call print
+    times 4096 db 0
