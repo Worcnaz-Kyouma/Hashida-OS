@@ -29,4 +29,4 @@ code:
 
     mov si, msg
     call print
-    times 4096 db 0
+    times 409600 db 0

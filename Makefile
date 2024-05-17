@@ -1,3 +1,4 @@
+# hexdump file -C
 NASMPARAMS = -f bin
 FAT_PARAMS = -F 12
 DISK_SIZE = 2880
@@ -35,13 +36,16 @@ hashidaOS.iso: iso/bootloader.img
 	genisoimage -quiet -V '$(basename $@)' -input-charset iso8859-1 -o $@ -b $(notdir $<) -hide $(notdir $<) iso/
 	rm -rf iso
 
+debug: hashidaOS.iso
+	hexdump $< -C
+
 run: hashidaOS.iso
 	qemu-system-i386                                 	\
   	-accel tcg,thread=single                       		\
   	-cpu core2duo                                  		\
   	-m 128                                         		\
   	-no-reboot                                     		\
-  	-drive format=raw,media=cdrom,file=hashidaOS.iso    \
+  	-drive format=raw,media=cdrom,file=$<    			\
   	-serial stdio                                  		\
   	-smp 1                                         		\
   	-usb                                           		\

@@ -44,7 +44,6 @@ driveNumber:        db 0h
 numberOfHeads:      resb 1
 numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
-tester: dw 1111001101011011b
 
 ;******************************
 ;   Important values
@@ -206,25 +205,12 @@ LoadFat:
 LoadFile:
     call LoadFat
     mov ax, [di + 26] ; First cluster number
-
-    mov al, [0x047]
-    call DumpAxRegister
     
     mov bx, 0x4434
     mov es, bx
 
-    ; mov ax, es:[0x0]
-    ; call DumpAxRegister
-    ; mov ax, es:[0x2]
-    ; call DumpAxRegister
-    ; mov ax, es:[0x4]
-    ; call DumpAxRegister
-    ; mov ax, es:[0x6]
-    ; call DumpAxRegister
-    ; mov ax, es:[0x8]
-    ; call DumpAxRegister
-    ; mov ax, es:[0x10]
-    ; call DumpAxRegister
+    call DumpAxRegister
+
     ; LoadFile_loop_ReadFile:
     ;     xor bx, bx
     ;     mov es, bx
