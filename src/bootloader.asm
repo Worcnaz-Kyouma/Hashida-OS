@@ -204,62 +204,59 @@ LoadFat:
 
 LoadFile:
     call LoadFat
-    mov ax, [di + 26] ; First cluster number
+    mov dx, [di + 26] ; First cluster number
     
     mov bx, 0x4434
     mov es, bx
 
-    call DumpAxRegister
+    LoadFile_loop_ReadFile:
+        push dx
 
-    ; LoadFile_loop_ReadFile:
-    ;     xor bx, bx
-    ;     mov es, bx
+        cmp dx, 0xFFF8
+        jae LoadFile_loopEnd_ReadFile
+
+        cmp dx, 0x0002
+        jbe error
+        cmp dx, 0xFFF7
+        je error
+
+        mov ax, dx
+        sub ax, 2
+        xor bx, bx
+        mov bl, [bpbSectorsPerCluster]
+        xor dx, dx
+        mul bx
+
+        mov cx, ax
         
-    ;     cmp ax, 0xFFF8
-    ;     jae LoadFile_loopEnd_ReadFile
+        ; Read sectors of cluster in memory
+        mov ax, [bpbRootDirEntries]
+        mov bx, 32
+        xor dx, dx
+        mul ax
+        mov bx, [bpbBytesPerSector]
+        xor dx, dx
+        div bx
+        inc ax
 
-    ;     cmp ax, 0x0002
-    ;     jbe error
-    ;     cmp ax, 0xFFF7
-    ;     je error
+        mov dx, [rootDirStart]
+        add dx, ax
 
-    ;     ; Read sectors of cluster in memory
-    ;     mov ax, [bpbRootDirEntries]
-    ;     mov bx, 32
-    ;     mul ax
-    ;     mov bx, [bpbBytesPerSector]
-    ;     div bx
-    ;     inc ax
+        add cx, dx
 
-    ;     mov cx, [rootDirStart]
-    ;     add cx, ax
+        call ParseLBAtoCHS
 
-    ;     mov dx, ax
-    ;     sub ax, 2
-    ;     xor bx, bx
-    ;     mov bl, [bpbSectorsPerCluster]
-    ;     mul bx
+        mov ah, 02h
+        mov al, [bpbSectorsPerCluster]
+        mov dl, [driveNumber]
+        xor bx, bx
+        mov es, bx
+        mov bx, 0x1000
+        int 13h
 
-    ;     add cx, ax
+        pop dx
 
-    ;     call ParseLBAtoCHS
-
-    ;     mov ah, 02h
-    ;     mov al, [bpbSectorsPerCluster]
-    ;     mov dl, [driveNumber]
-    ;     xor bx, bx
-    ;     mov es, bx
-    ;     mov bx, 0x1000
-    ;     int 13h
-
-    ;     ; Read the next cluster and save into si
-    ;     mov bx, 0x4434
-    ;     mov es, bx
-
-    ;     mov si, ax
-    ;     mov ax, [si]
-
-    ;     jmp LoadFile_loop_ReadFile
+        jmp LoadFile_loop_ReadFile
 LoadFile_loopEnd_ReadFile:
     ret
 
