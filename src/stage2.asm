@@ -1,6 +1,6 @@
 bits 16
 
-org 0x7c01
+org 0x0
 
 start: jmp code
 
@@ -23,10 +23,13 @@ printDone:
 msg     db      "That is the second stage... EL PSY KONGROO!!!", 0
 
 code:
-    xor ax, ax
-    mov dx, ax
+    mov ax, 0x7d00
+    mov ds, ax
     mov es, ax
+
 
     mov si, msg
     call print
-    times 409600 db 0
+
+    cli
+    hlt

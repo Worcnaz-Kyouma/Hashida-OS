@@ -6,6 +6,14 @@
 ;   Mentor: Mike from BrokenThorn, and much more resources
 ;***********************************
 
+;***********************************
+;   Log de sucessos
+;       - 18/05/2024: Primeiro jmp ao second stage
+
+;***********************************
+
+; Erro no tamanho do load no second stage
+
 bits 16
 
 org 0x7c00
@@ -40,7 +48,7 @@ start: jmp loader
 ;******************************
 ;   Disk parameters(int 13h, AH=08h)
 ;******************************
-driveNumber:        db 0h
+; driveNumber:        db 0h
 numberOfHeads:      resb 1
 numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
@@ -53,6 +61,7 @@ numberOfSectors:    resb 1
 rootDirStart:           resb 2
 stage2Name              db "STAGE2  BIN"
 ; stage2Offset:           dw 0x1000
+dataReg:                resb 2
 
 ;******************************
 ; Functions
@@ -69,7 +78,7 @@ PrintDone:
 
 ResetDiskSystem:
     mov ah, 0
-    mov dl, [driveNumber]
+    mov dl, 0x0
     int 13h
 
 PopulateDiskParameters:
@@ -77,7 +86,7 @@ PopulateDiskParameters:
     mov es, ax
     mov di, ax
     mov ah, 08h
-    mov dl, [driveNumber]
+    mov dl, 0h
     int 13h
 
     mov bl, cl
@@ -158,7 +167,7 @@ ReadRootDirectory:
 
     mov ah, 02h
     mov al, bl
-    mov dl, [driveNumber]
+    mov dl, 0h
     xor bx, bx
     mov es, bx
     mov bx, 0x0500
@@ -185,7 +194,7 @@ FindSecondStage:
         add di, 32
 
         loop FindSecondStage_loop_findFileSi
-        jmp error
+        ; jmp error
 FindSecondStageDone:
     ret
 
@@ -195,7 +204,7 @@ LoadFat:
     mov ch, 0
     mov cl, 2
     mov dh, 0
-    mov dl, [driveNumber]
+    mov dl, 0h
     mov bx, 0x4434
     mov es, bx
     xor bx, bx
@@ -204,55 +213,58 @@ LoadFat:
 
 LoadFile:
     call LoadFat
+
+    ; Read sectors of cluster in memory
+    mov ax, [bpbRootDirEntries]
+    mov bx, 32
+    xor dx, dx
+    mul bx
+    mov bx, [bpbBytesPerSector]
+    xor dx, dx
+    div bx
+
+    mov dx, [rootDirStart]
+    add dx, ax
+    mov [dataReg], dx
+
     mov dx, [di + 26] ; First cluster number
-    
-    mov bx, 0x4434
-    mov es, bx
 
-    LoadFile_loop_ReadFile:
-        push dx
-
-        cmp dx, 0xFFF8
+    LoadFile_loop_ReadFile: 
+        cmp dx, 0xFF8
         jae LoadFile_loopEnd_ReadFile
 
-        cmp dx, 0x0002
+        cmp dx, 0x002
         jbe error
-        cmp dx, 0xFFF7
+        cmp dx, 0xFF7
         je error
 
+        push dx
+
         mov ax, dx
+
         sub ax, 2
-        xor bx, bx
-        mov bl, [bpbSectorsPerCluster]
+
+        movzx bx, byte [bpbSectorsPerCluster]
         xor dx, dx
         mul bx
-
         mov cx, ax
-        
-        ; Read sectors of cluster in memory
-        mov ax, [bpbRootDirEntries]
-        mov bx, 32
-        xor dx, dx
-        mul ax
-        mov bx, [bpbBytesPerSector]
-        xor dx, dx
-        div bx
-        inc ax
 
-        mov dx, [rootDirStart]
-        add dx, ax
-
-        add cx, dx
+        add cx, [dataReg]
+        mov ax, cx
 
         call ParseLBAtoCHS
 
         mov ah, 02h
         mov al, [bpbSectorsPerCluster]
-        mov dl, [driveNumber]
-        xor bx, bx
+        mov dl, 0h
+        mov bx, 0x7d00
         mov es, bx
-        mov bx, 0x1000
+        mov bx, 0x0
         int 13h
+        jc error
+
+        mov bx, 0x4434
+        mov es, bx
 
         pop ax
         push ax
@@ -263,42 +275,28 @@ LoadFile:
         mov bx, 2
         xor dx, dx
         div bx
-        mov cx, ax
+        mov di, ax
    
         pop ax
         mov bx, 2
         xor dx, dx
-        ; div aqui
-        
+        div bx
 
+        mov ax, es:[di]
+
+        cmp dx, 0
+        je evenFATIndex
+        shr ax, 4
+        mov dx, ax
+        jmp LoadFile_loop_ReadFile
+
+        evenFATIndex:
+        and ax, 0x0fff
+        mov dx, ax
         jmp LoadFile_loop_ReadFile
 LoadFile_loopEnd_ReadFile:
     ret
 
-pointer_asciiAx db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0xA, 0xD, 0
-DumpAxRegister:
-    lea si, pointer_asciiAx
-    add si, 18
-    mov cx, 19
-    PopulateAsciiPointer_loop_PopulateAsciiPointer:
-        mov bl, [si]
-        cmp bl, 0x20
-        je PopulateAsciiPointer_loop_PopulateAsciiPointerEnd
-
-        mov bx, ax
-        and bx, 0000000000000001b
-        add bl, 00110000b
-        mov [si], bl
-
-        shr ax, 1
-        PopulateAsciiPointer_loop_PopulateAsciiPointerEnd:
-        dec si
-        loop PopulateAsciiPointer_loop_PopulateAsciiPointer
-
-    mov si, pointer_asciiAx
-    call Print
-
-    ret
 ;***********************************
 ;   Bootloader Entry Point
 ;***********************************
@@ -325,11 +323,11 @@ loader:
 
     ; Read disk parameters
     call PopulateDiskParameters
-    jc error
+    ; jc error
 
     ; Read root directory in rootDirectoryOffset
     call ReadRootDirectory
-    jc error
+    ; jc error
 
     ; Return in DI the offset of stage 2 entry
     call FindSecondStage
@@ -337,8 +335,7 @@ loader:
     ; Read file into stage2Offset
     call LoadFile
 
-    ; Jump to that code
-    ; jmp 0x1000
+    jmp 0x7d00:0
 
 times 510 - ($-$$) db 0
 dw 0x55AA
