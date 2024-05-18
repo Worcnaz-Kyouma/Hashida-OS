@@ -254,7 +254,22 @@ LoadFile:
         mov bx, 0x1000
         int 13h
 
-        pop dx
+        pop ax
+        push ax
+
+        mov bx, 3
+        xor dx, dx
+        mul bx
+        mov bx, 2
+        xor dx, dx
+        div bx
+        mov cx, ax
+   
+        pop ax
+        mov bx, 2
+        xor dx, dx
+        ; div aqui
+        
 
         jmp LoadFile_loop_ReadFile
 LoadFile_loopEnd_ReadFile:
