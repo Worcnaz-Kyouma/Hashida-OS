@@ -23,7 +23,5 @@ DumpAxRegister:
     call Print
     mov si, pointer_asciiAx
     call Print
-    mov si, defaultBreakline
-    call Print
 
     ret

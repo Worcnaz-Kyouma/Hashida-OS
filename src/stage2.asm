@@ -1,6 +1,6 @@
 bits 16
 
-org 0x0
+org 0x0 ; 0x8000:0x0
 
 start: jmp code
 
@@ -23,7 +23,7 @@ printDone:
 msg     db      "That is the second stage... EL PSY KONGROO!!!", 0
 
 code:
-    mov ax, 0x7d00
+    mov ax, 0x8000
     mov ds, ax
     mov es, ax
 
@@ -33,3 +33,5 @@ code:
 
     cli
     hlt
+
+    times 65536 - ($-$$) db 0

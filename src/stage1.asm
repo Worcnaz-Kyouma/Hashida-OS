@@ -7,16 +7,13 @@
 ;***********************************
 
 ;***********************************
-;   Log de sucessos
-;       - 18/05/2024: Primeiro jmp ao second stage
-
+;   Sucess logs
+;       - 18/05/2024: First JMP to the second stage
 ;***********************************
-
-; Erro no tamanho do load no second stage
 
 bits 16
 
-org 0x7c00
+org 0x7c00 ; 0x0:0x7c00
 
 ;***********************************
 ;   BIOS Parameter Block(BPB), will be populated
@@ -48,7 +45,7 @@ start: jmp loader
 ;******************************
 ;   Disk parameters(int 13h, AH=08h)
 ;******************************
-; driveNumber:        db 0h
+driveNumber:        db 0h
 numberOfHeads:      resb 1
 numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
@@ -56,29 +53,23 @@ numberOfSectors:    resb 1
 ;******************************
 ;   Important values
 ;******************************
-; FATSegmentES:           dw 0x4434
+rootDirStart:   resb 2
+dataReg:        resb 2
+stage2Name      db "STAGE2  BIN"
+
+; FATSegment:             dw 0x4434
 ; rootDirectoryOffset:    dw 0x0500
-rootDirStart:           resb 2
-stage2Name              db "STAGE2  BIN"
-; stage2Offset:           dw 0x1000
-dataReg:                resb 2
+
+; stage2Offset:           dw 0x0
+; stage2Segment:          dw 0x8000
+
 
 ;******************************
 ; Functions
 ;******************************
-Print:
-    lodsb
-    or al,al
-    jz PrintDone
-    mov ah, 0x0e
-    int 10h
-    jmp Print
-PrintDone:
-    ret
-
 ResetDiskSystem:
     mov ah, 0
-    mov dl, 0x0
+    mov dl, [driveNumber]
     int 13h
 
 PopulateDiskParameters:
@@ -86,7 +77,7 @@ PopulateDiskParameters:
     mov es, ax
     mov di, ax
     mov ah, 08h
-    mov dl, 0h
+    mov dl, [driveNumber]
     int 13h
 
     mov bl, cl
@@ -167,7 +158,7 @@ ReadRootDirectory:
 
     mov ah, 02h
     mov al, bl
-    mov dl, 0h
+    mov dl, [driveNumber]
     xor bx, bx
     mov es, bx
     mov bx, 0x0500
@@ -184,7 +175,7 @@ FindSecondStage:
         push cx
         push di
 
-        mov cx, 11 ; 11 Repeats
+        mov cx, 11
         rep cmpsb
 
         pop di
@@ -194,25 +185,22 @@ FindSecondStage:
         add di, 32
 
         loop FindSecondStage_loop_findFileSi
-        ; jmp error
+        jmp error
 FindSecondStageDone:
     ret
 
-LoadFat:
+LoadFile:
+    ; Load fat
     mov ah, 02h
     mov al, 127
     mov ch, 0
     mov cl, 2
     mov dh, 0
-    mov dl, 0h
+    mov dl, [driveNumber]
     mov bx, 0x4434
     mov es, bx
     xor bx, bx
     int 13h
-    ret
-
-LoadFile:
-    call LoadFat
 
     ; Read sectors of cluster in memory
     mov ax, [bpbRootDirEntries]
@@ -229,6 +217,7 @@ LoadFile:
 
     mov dx, [di + 26] ; First cluster number
 
+    xor cx, cx
     LoadFile_loop_ReadFile: 
         cmp dx, 0xFF8
         jae LoadFile_loopEnd_ReadFile
@@ -239,6 +228,7 @@ LoadFile:
         je error
 
         push dx
+        push cx
 
         mov ax, dx
 
@@ -256,18 +246,27 @@ LoadFile:
 
         mov ah, 02h
         mov al, [bpbSectorsPerCluster]
-        mov dl, 0h
-        mov bx, 0x7d00
+        mov dl, [driveNumber]
+        mov bx, 0x8000
         mov es, bx
-        mov bx, 0x0
+        pop bx ; That limit the second stage just to 65536 bytes (128 sectors, cause 0x0 point to the first one, more than that result in overflow here and load didnt work anymore)
         int 13h
         jc error
 
-        mov bx, 0x4434
-        mov es, bx
+        mov cx, bx
+
+        mov ax, [bpbSectorsPerCluster]
+        mov bx, [bpbBytesPerSector]
+        mul bx
+
+        add cx, ax
 
         pop ax
+        push cx
         push ax
+
+        mov bx, 0x4434
+        mov es, bx
 
         mov bx, 3
         xor dx, dx
@@ -276,16 +275,17 @@ LoadFile:
         xor dx, dx
         div bx
         mov di, ax
-   
+
         pop ax
         mov bx, 2
         xor dx, dx
         div bx
 
+        pop cx
         mov ax, es:[di]
-
         cmp dx, 0
         je evenFATIndex
+
         shr ax, 4
         mov dx, ax
         jmp LoadFile_loop_ReadFile
@@ -301,33 +301,35 @@ LoadFile_loopEnd_ReadFile:
 ;   Bootloader Entry Point
 ;***********************************
 
-errorMessage   db      "Err", 0
+errorMessage   db      "Er", 0
 
 error:
     mov si, errorMessage
-    call Print
+
+    Print:
+    lodsb
+    or al,al
+    jz PrintDone
+    mov ah, 0x0e
+    int 10h
+    jmp Print
+    PrintDone:
 
     cli 
     hlt
 
 loader:
-
-    ; Preparing OS environment
-    xor ax, ax
-    mov dx, ax
-    mov es, ax
-
     reset:
         call ResetDiskSystem
         jc reset
 
     ; Read disk parameters
     call PopulateDiskParameters
-    ; jc error
+    jc error
 
     ; Read root directory in rootDirectoryOffset
     call ReadRootDirectory
-    ; jc error
+    jc error
 
     ; Return in DI the offset of stage 2 entry
     call FindSecondStage
@@ -335,7 +337,7 @@ loader:
     ; Read file into stage2Offset
     call LoadFile
 
-    jmp 0x7d00:0
+    jmp 0x8000:0
 
 times 510 - ($-$$) db 0
 dw 0x55AA
