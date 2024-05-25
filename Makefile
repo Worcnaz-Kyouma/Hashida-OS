@@ -3,11 +3,17 @@ NASMPARAMS = -f bin
 FAT_PARAMS = -F 12
 DISK_SIZE = 2880
 
+STAGES = $(patsubst src/bootloader/stages/%.asm,bin/%.bin,$(wildcard src/bootloader/stages/*.asm))
+
+bin/%.bin: src/bootloader/stages/%.asm
+	mkdir -p bin
+	nasm $(NASMPARAMS) $< -o $@
+
 bin/%.bin: src/%.asm
 	mkdir -p bin
 	nasm $(NASMPARAMS) $< -o $@
 
-bin/bootloader.img: bin/stage1.bin bin/stage2.bin
+bin/bootloader.img: $(STAGES)
 	dd if=/dev/zero of=$@ bs=1024 count=$(DISK_SIZE) status=progress
 
 	sudo mkfs.vfat $(FAT_PARAMS) $@
@@ -15,7 +21,9 @@ bin/bootloader.img: bin/stage1.bin bin/stage2.bin
 	sudo mkdir /mnt/tempdisk
 	sudo mount -o loop $@ /mnt/tempdisk
 
-	sudo cp $(word 2, $^) /mnt/tempdisk
+	@for file in $(filter-out stage1.bin,$^); do \
+        sudo cp $$file /mnt/tempdisk; \
+	done
 
 	sudo umount /mnt/tempdisk
 	sudo rm -rf /mnt/tempdisk
