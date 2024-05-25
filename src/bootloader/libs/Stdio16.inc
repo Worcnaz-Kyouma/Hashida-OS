@@ -10,6 +10,15 @@
 
 bits 16
 
+print:
+    lodsb
+    or al,al
+    jz .printDone
+    mov ah, 0x0e
+    int 10h
+    jmp print
 
+    .printDone:
+        ret
 
 %endif ; __STDIO16_INC_3444_INCLUDED__
