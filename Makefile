@@ -1,5 +1,5 @@
 # hexdump file -C
-NASMPARAMS = -f bin
+NASMPARAMS = -isrc/bootloader/libs/ -f bin
 FAT_PARAMS = -F 12
 DISK_SIZE = 2880
 
@@ -21,8 +21,9 @@ bin/bootloader.img: $(STAGES)
 	sudo mkdir /mnt/tempdisk
 	sudo mount -o loop $@ /mnt/tempdisk
 
-	@for file in $(filter-out stage1.bin,$^); do \
-        sudo cp $$file /mnt/tempdisk; \
+	@for file in $(filter-out bin/stage1.bin,$^); do \
+        echo $$file; \
+		sudo cp $$file /mnt/tempdisk; \
 	done
 
 	sudo umount /mnt/tempdisk
