@@ -11,6 +11,8 @@
 ;       - 18/05/2024: First JMP to the second stage
 ;***********************************
 
+; Found an error when change STAGE2.BIN position in FAT structure
+
 bits 16
 
 org 0x7c00 ; 0x0:0x7c00
