@@ -8,7 +8,7 @@ start: jmp entryPoint
 ;   Includes
 ;*****************
     %include "Stdio16.inc"
-    %include "SecMemory.inc"
+    %include "FAT12.inc"
 ;*****************
 
 ;*****************
@@ -22,7 +22,7 @@ start: jmp entryPoint
 ;*****************
 
 ;*****************
-;   SecMemory Params
+;   FAT12 Params
 ;*****************
     rootDirOffset   resb 2
     rootDirSegment  resb 2
@@ -50,14 +50,17 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
-    ; Prepare SecMemory.inc
+    cli
+    hlt
+
+    ; Prepare FAT12.inc
     push [FATSegment]
     push [FATOffset]
     push [rootDirSegment]
     push [rootDirOffset]
-    call prepareSecMemoryParams
+    call prepareFAT12Params
 
-    ; Load Kernel
+    ; Get Kernel Entry
     push [rootDirSegment]
     push [rootDirOffset]
     push kernelName
@@ -67,6 +70,7 @@ entryPoint:
 
     mov ax, es:[di + 26]        ; First Kernel Cluster
 
+    ; Load Kernel
     push [FATSegment]
     push [FATOffset]
     push [kernelSegment]
@@ -78,7 +82,9 @@ entryPoint:
     ; ????????
 
     ; Enable Protected Mode
-    ; ????????
+    ; create GDT
+    ; set GDTR(LGDT)
+    ; enable CR0 to Protected Mode
 
     ; Run Kernel
     ; ????????

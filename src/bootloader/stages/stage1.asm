@@ -21,26 +21,26 @@ org 0x7c00 ; 0x0:0x7c00
 ;   BIOS Parameter Block(BPB), will be populated
 ;   in the build of the system
 ;***********************************
-bpbStartingJump:        resb 3         ; Reserve 3 bytes
-bpbOEMIdentifier:       resb 8         ; Reserve 8 bytes
-bpbBytesPerSector:      resb 2         ; Reserve 2 bytes (1 word)
-bpbSectorsPerCluster:   resb 1         ; Reserve 1 byte
-bpbReservedSectors:     resb 2         ; Reserve 2 bytes (1 word)
-bpbNumberOfFATs:        resb 1         ; Reserve 1 byte
-bpbRootDirEntries:      resb 2         ; Reserve 2 bytes (1 word)
-bpbNumberOfSectors:     resb 2         ; Reserve 2 bytes (1 word)
-bpbMediaDescType:       resb 1         ; Reserve 1 byte
-bpbSectorsPerFAT:       resb 2         ; Reserve 2 bytes (1 word)
-bpbSectorsPerTrack:     resb 2         ; Reserve 2 bytes (1 word)
-bpbNumberOfHeads:       resb 2         ; Reserve 2 bytes (1 word)
-bpbHiddenSectors:       resb 4         ; Reserve 4 bytes (1 dword)
-bpbNumberOfSectorsE:    resb 4         ; Reserve 4 bytes (1 dword)
-ebpbDriveNumber:        resb 1         ; Reserve 1 byte
-ebpbReserved:           resb 1         ; Reserve 1 byte
-ebpbSignature:          resb 1         ; Reserve 1 byte
-ebpbVolumeID:           resb 4         ; Reserve 4 bytes (1 dword)
-ebpbVolumeLabel:        resb 11        ; Reserve 11 bytes
-ebpbSystemIdentifier:   resb 8         ; Reserve 8 bytes
+bpbStartingJump:        resb 3
+bpbOEMIdentifier:       resb 8
+bpbBytesPerSector:      resb 2
+bpbSectorsPerCluster:   resb 1
+bpbReservedSectors:     resb 2
+bpbNumberOfFATs:        resb 1
+bpbRootDirEntries:      resb 2
+bpbNumberOfSectors:     resb 2
+bpbMediaDescType:       resb 1
+bpbSectorsPerFAT:       resb 2
+bpbSectorsPerTrack:     resb 2
+bpbNumberOfHeads:       resb 2
+bpbHiddenSectors:       resb 4
+bpbNumberOfSectorsE:    resb 4
+ebpbDriveNumber:        resb 1
+ebpbReserved:           resb 1
+ebpbSignature:          resb 1
+ebpbVolumeID:           resb 4
+ebpbVolumeLabel:        resb 11
+ebpbSystemIdentifier:   resb 8
 
 start: jmp loader
 

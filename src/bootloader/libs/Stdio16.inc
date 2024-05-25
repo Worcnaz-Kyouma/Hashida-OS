@@ -32,7 +32,6 @@ bits 16
 ;*****************
 
 print:
-    pusha
 
     .loop_printing:
     lodsb
@@ -43,11 +42,9 @@ print:
     jmp .loop_printing
 
     .loopEnd_printing:
-        popa
         ret
 
 dumb16Registers:
-    pusha
 
     ; AX
     mov si, dumb16Registers_pointer_axPrologue
@@ -77,13 +74,11 @@ dumb16Registers:
     call parseAxRegisterIntoAscii
     call print
 
-    popa
     ret
     
 
 parseAxRegisterIntoAscii:
-    pusha
-
+    
     lea si, parseAxRegisterIntoAscii_pointer_asciiRegister
     add si, 18
     mov cx, 19
@@ -102,8 +97,6 @@ parseAxRegisterIntoAscii:
         dec si
         loop .loop_asciiRegister
 
-    popa
-
     mov si, parseAxRegisterIntoAscii_pointer_asciiRegister
 
     ret
@@ -112,4 +105,4 @@ parseAxRegisterIntoAscii:
 
 ;*****************
 
-%endif ; __STDIO16_INC_3444_INCLUDED__
+%endif ;__STDIO16_INC_3444_INCLUDED__
