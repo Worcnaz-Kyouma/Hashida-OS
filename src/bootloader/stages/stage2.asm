@@ -50,44 +50,44 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
-    cli
-    hlt
+    mov ax, 1
+    call dumb16Registers
 
-    ; Prepare FAT12.inc
-    push [FATSegment]
-    push [FATOffset]
-    push [rootDirSegment]
-    push [rootDirOffset]
-    call prepareFAT12Params
+    ; ; Prepare FAT12.inc
+    ; push [FATSegment]
+    ; push [FATOffset]
+    ; push [rootDirSegment]
+    ; push [rootDirOffset]
+    ; call prepareFAT12Params
 
-    ; Get Kernel Entry
-    push [rootDirSegment]
-    push [rootDirOffset]
-    push kernelName
-    call getFileEntry           ; di = fileEntry offset
+    ; ; Get Kernel Entry
+    ; push [rootDirSegment]
+    ; push [rootDirOffset]
+    ; push kernelName
+    ; call getFileEntry           ; di = fileEntry offset
 
-    mov es, [rootDirSegment]
+    ; mov es, [rootDirSegment]
 
-    mov ax, es:[di + 26]        ; First Kernel Cluster
+    ; mov ax, es:[di + 26]        ; First Kernel Cluster
 
-    ; Load Kernel
-    push [FATSegment]
-    push [FATOffset]
-    push [kernelSegment]
-    push [kernelOffset]
-    push ax                     ; First cluster
-    call loadClusters
+    ; ; Load Kernel
+    ; push [FATSegment]
+    ; push [FATOffset]
+    ; push [kernelSegment]
+    ; push [kernelOffset]
+    ; push ax                     ; First cluster
+    ; call loadClusters
     
-    ; Enable A20
-    ; ????????
+    ; ; Enable A20
+    ; ; ????????
 
-    ; Enable Protected Mode
-    ; create GDT
-    ; set GDTR(LGDT)
-    ; enable CR0 to Protected Mode
+    ; ; Enable Protected Mode
+    ; ; create GDT
+    ; ; set GDTR(LGDT)
+    ; ; enable CR0 to Protected Mode
 
-    ; Run Kernel
-    ; ????????
+    ; ; Run Kernel
+    ; ; ????????
 
     cli
     hlt

@@ -32,7 +32,7 @@ bits 16
 ;*****************
 
 print:
-
+    pusha
     .loop_printing:
     lodsb
     or al,al
@@ -42,6 +42,7 @@ print:
     jmp .loop_printing
 
     .loopEnd_printing:
+        popa
         ret
 
 dumb16Registers:
