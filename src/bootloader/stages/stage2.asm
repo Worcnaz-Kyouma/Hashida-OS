@@ -50,9 +50,6 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
-    mov ax, 1
-    call dumb16Registers
-
     ; ; Prepare FAT12.inc
     ; push [FATSegment]
     ; push [FATOffset]
