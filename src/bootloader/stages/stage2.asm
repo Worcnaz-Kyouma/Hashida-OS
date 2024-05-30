@@ -50,6 +50,8 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
+    ; Fix stack? Strange error?
+
     ; ; Prepare FAT12.inc
     ; push [FATSegment]
     ; push [FATOffset]
