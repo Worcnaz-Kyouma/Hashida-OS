@@ -52,12 +52,12 @@ entryPoint:
 
     ; Fix stack? Strange error?
 
-    ; ; Prepare FAT12.inc
-    ; push [FATSegment]
-    ; push [FATOffset]
-    ; push [rootDirSegment]
-    ; push [rootDirOffset]
-    ; call prepareFAT12Params
+    ; Prepare FAT12.inc
+    push word [FATSegment]
+    push word [FATOffset]
+    push word [rootDirSegment]
+    push word [rootDirOffset]
+    call prepareFAT12Params
 
     ; ; Get Kernel Entry
     ; push [rootDirSegment]

@@ -2,7 +2,7 @@
 ;   General utilities, like print things in screen
 ;   Functions:
 ;       - print: prints array of chars that ends with 0, based in SI register
-;       - dumpRegisters: dumb all 16 bits registers into the screen
+;       - dumpRegisters: dump all 16 bits registers into the screen
 ;******************
 
 %ifndef __STDIO16_INC_3444_INCLUDED__
@@ -17,11 +17,11 @@ bits 16
 ; General
     breakline db 0x0A, 0
 
-; dumb16Registers
-    dumb16Registers_pointer_axPrologue db 'AX: ', 0
-    dumb16Registers_pointer_bxPrologue db 'BX: ', 0
-    dumb16Registers_pointer_cxPrologue db 'CX: ', 0
-    dumb16Registers_pointer_dxPrologue db 'DX: ', 0
+; dump16Registers
+    dump16Registers_pointer_axPrologue db 'AX: ', 0
+    dump16Registers_pointer_bxPrologue db 'BX: ', 0
+    dump16Registers_pointer_cxPrologue db 'CX: ', 0
+    dump16Registers_pointer_dxPrologue db 'DX: ', 0
 
 ; parseAxRegisterIntoAscii
     parseAxRegisterIntoAscii_pointer_asciiRegister db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x0A, 0xD, 0
@@ -45,31 +45,31 @@ print:
         popa
         ret
 
-dumb16Registers:
+dump16Registers:
 
     ; AX
-    mov si, dumb16Registers_pointer_axPrologue
+    mov si, dump16Registers_pointer_axPrologue
     call print
     mov ax, ax
     call parseAxRegisterIntoAscii
     call print
 
     ; BX
-    mov si, dumb16Registers_pointer_bxPrologue
+    mov si, dump16Registers_pointer_bxPrologue
     call print
     mov ax, bx
     call parseAxRegisterIntoAscii
     call print
 
     ; CX
-    mov si, dumb16Registers_pointer_cxPrologue
+    mov si, dump16Registers_pointer_cxPrologue
     call print
     mov ax, cx
     call parseAxRegisterIntoAscii
     call print
 
     ; DC
-    mov si, dumb16Registers_pointer_dxPrologue
+    mov si, dump16Registers_pointer_dxPrologue
     call print
     mov ax, dx
     call parseAxRegisterIntoAscii
