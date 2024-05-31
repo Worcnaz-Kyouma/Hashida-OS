@@ -147,7 +147,6 @@ prepareFAT12Params:
 
     call copyBPBParam
 %endmacro
-
 copyBPBParam:
     .loop_copyBPBParam:
         mov al, es:[di]
