@@ -13,6 +13,11 @@
 bits 16
 
 ;*****************
+;   Includes
+;*****************
+%include "Utilities.inc"
+
+;*****************
 ;   BPB Copy
 ;*****************
     bpbOEMIdentifier:       resb 8
@@ -28,7 +33,6 @@ bits 16
     ebpbVolumeID:           resb 4
     ebpbVolumeLabel:        resb 11
     ebpbSystemIdentifier:   resb 8
-;*****************
 
 ;*****************
 ;   Utility variables
@@ -38,13 +42,22 @@ bits 16
     numberOfCylinders:  resb 2
     numberOfSectors:    resb 1
 
-
 ;*****************
+;   Macros
+;*****************
+%macro copy_bpb_param 3
+    mov di, %1      ; source BPB param offset
+    add di, 0x7c00
+
+    mov si, %2      ; destination BPB param offset
+    mov cx, %3      ; size
+
+    call copyBPBParam
+%endmacro
 
 ;*****************
 ;   Functions
 ;*****************
-
 resetDiskSystem:
     mov ah, 0
     mov dl, [driveNumber]
@@ -85,29 +98,22 @@ parseLBAtoCHS:
     ; Sector + Head calculation
     mov ax, cx
 
-    xor dx, dx
     movzx bx, byte [numberOfSectors]
-    div bx
+    div_simple ax, bx
 
     inc dx
     push dx ; Sector
     
-    xor dx,dx
     movzx bx, byte [numberOfHeads]
-    div bx
+    div_simple ax, bx
 
     push dx ; Head
     
     ; Cylinder calculation
-    mov al, [numberOfHeads]
-    mov bl, [numberOfSectors]
-    xor dx, dx
-    mul bl
+    mul_simple_8 byte [numberOfHeads], byte [numberOfSectors]
     mov bx, ax
 
-    mov ax, cx
-    xor dx, dx
-    div bx
+    div_simple cx, bx
 
     pop dx ; Head
     pop cx ; Sector(CL)
@@ -140,19 +146,27 @@ prepareFAT12Params:
     push word [bp + 4]    ; RootDirOffset 
     call loadRootDirectory
 
+    mov es, [bp + 6]
+    mov di, [bp + 4]
+    mov ax, es:[di]
+
+    pusha
+    call dump16Registers
+    popa
+
+    mov es, [bp + 10]
+    mov di, [bp + 8]
+    mov ax, es:[di]
+
+    pusha
+    call dump16Registers
+    popa
+
+
     mov sp, bp
     pop bp
     ret
 
-%macro copy_bpb_param 3
-    mov di, %1      ; source BPB param offset
-    add di, 0x7c00
-
-    mov si, %2      ; destination BPB param offset
-    mov cx, %3      ; size
-
-    call copyBPBParam
-%endmacro
 copyBPBParam:
     .loop_copyBPBParam:
         mov al, es:[di]
@@ -209,24 +223,17 @@ loadRootDirectory:
     mov bp, sp
 
     ; RootEntriesCount * 32
-    mov ax, [bpbRootDirEntries]
-    mov bx, 32
-    xor dx, dx
-    mul bx
+    mul_simple [bpbRootDirEntries], 32
 
     ; (RootEntriesCount * 32) / BytesPerSector
-    mov bx, [bpbBytesPerSector]
-    xor dx, dx
-    div bx
+    div_simple ax, [bpbBytesPerSector]
     inc ax
 
     push ax
     
     ; NumberOfFATs * SectorsPerFAT
     movzx ax, byte [bpbNumberOfFATs]
-    mov bx, [bpbSectorsPerFAT]
-    xor dx, dx
-    mul bx
+    mul_simple ax, [bpbSectorsPerFAT]
 
     ; FAT Start
     add ax, [bpbReservedSectors]

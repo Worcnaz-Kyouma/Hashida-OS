@@ -7,6 +7,7 @@ start: jmp entryPoint
 ;*****************
 ;   Includes
 ;*****************
+    %include "Utilities.inc"
     %include "Stdio16.inc"
     %include "FAT12.inc"
 ;*****************
@@ -17,9 +18,8 @@ start: jmp entryPoint
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
     kernelName db 'KERNEL  BIN'
 
-    kernelOffset    resb 2
-    kernelSegment   resb 2
-;*****************
+    kernelOffset:    resb 2
+    kernelSegment:   resb 2
 
 ;*****************
 ;   FAT12 Params
@@ -29,7 +29,6 @@ start: jmp entryPoint
 
     FATOffset:      dw 0x0
     FATSegment:     dw 0x1000
-;*****************
 
 prepareStage2:
     mov ax, 0x8000

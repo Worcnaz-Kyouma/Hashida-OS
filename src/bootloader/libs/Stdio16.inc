@@ -1,5 +1,5 @@
 ;******************
-;   General utilities, like print things in screen
+;   General IO utilities, like print things in screen
 ;   Functions:
 ;       - print: prints array of chars that ends with 0, based in SI register
 ;       - dumpRegisters: dump all 16 bits registers into the screen
@@ -25,7 +25,6 @@ bits 16
 
 ; parseAxRegisterIntoAscii
     parseAxRegisterIntoAscii_pointer_asciiRegister db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x0A, 0xD, 0
-;*****************
 
 ;*****************
 ;   Functions
@@ -102,9 +101,6 @@ parseAxRegisterIntoAscii:
     
     mov si, parseAxRegisterIntoAscii_pointer_asciiRegister
     ret
-
 ;
-
-;*****************
 
 %endif ;__STDIO16_INC_3444_INCLUDED__
