@@ -24,11 +24,11 @@ start: jmp entryPoint
 ;*****************
 ;   FAT12 Params
 ;*****************
-    rootDirOffset   resb 2
-    rootDirSegment  resb 2
+    rootDirOffset:  dw 0x0
+    rootDirSegment: dw 0x9000
 
-    FATOffset       resb 2
-    FATSegment      resb 2
+    FATOffset:      dw 0x0
+    FATSegment:     dw 0x1000
 ;*****************
 
 prepareStage2:

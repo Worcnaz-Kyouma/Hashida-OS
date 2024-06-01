@@ -79,7 +79,7 @@ dump16Registers:
     
 
 parseAxRegisterIntoAscii:
-    
+    pusha
     lea si, parseAxRegisterIntoAscii_pointer_asciiRegister
     add si, 18
     mov cx, 19
@@ -98,8 +98,9 @@ parseAxRegisterIntoAscii:
         dec si
         loop .loop_asciiRegister
 
+    popa
+    
     mov si, parseAxRegisterIntoAscii_pointer_asciiRegister
-
     ret
 
 ;

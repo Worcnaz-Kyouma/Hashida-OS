@@ -101,6 +101,7 @@ parseLBAtoCHS:
     ; Cylinder calculation
     mov al, [numberOfHeads]
     mov bl, [numberOfSectors]
+    xor dx, dx
     mul bl
     mov bx, ax
 
@@ -129,10 +130,15 @@ prepareFAT12Params:
 
     call copyBPB
 
-    mov ax, [bpbNumberOfFATs]
-    call dump16Registers
+    call populateDiskParameters
 
-    ; populateDiskParameters
+    push word [bp + 10]   ; FATSegment
+    push word [bp + 8]    ; FATOffset 
+    call loadFAT
+
+    push word [bp + 6]    ; RootDirSegment
+    push word [bp + 4]    ; RootDirOffset 
+    call loadRootDirectory
 
     mov sp, bp
     pop bp
@@ -177,9 +183,69 @@ copyBPB:
 
     ret
 
-; loadFAT:
+loadFAT:
+    push bp
+    mov bp, sp
 
-; loadRootDirectory:
+    ; FAT Start
+    mov ax, [bpbReservedSectors]
+
+    push ax
+    call parseLBAtoCHS
+    
+    mov ah, 02h
+    mov al, [bpbSectorsPerFAT]
+    mov dl, [driveNumber]
+    mov es, [bp + 6]
+    mov bx, [bp + 4]
+    int 13h
+
+    mov sp, bp
+    pop bp
+    ret
+
+loadRootDirectory:
+    push bp
+    mov bp, sp
+
+    ; RootEntriesCount * 32
+    mov ax, [bpbRootDirEntries]
+    mov bx, 32
+    xor dx, dx
+    mul bx
+
+    ; (RootEntriesCount * 32) / BytesPerSector
+    mov bx, [bpbBytesPerSector]
+    xor dx, dx
+    div bx
+    inc ax
+
+    push ax
+    
+    ; NumberOfFATs * SectorsPerFAT
+    movzx ax, byte [bpbNumberOfFATs]
+    mov bx, [bpbSectorsPerFAT]
+    xor dx, dx
+    mul bx
+
+    ; FAT Start
+    add ax, [bpbReservedSectors]
+
+    push ax
+    call parseLBAtoCHS
+
+    pop ax
+
+    pop ax                  ; AX -> AL = (RootEntriesCount * 32) / BytesPerSector
+    mov ah, 02h
+    mov dl, [driveNumber]
+    mov es, [bp + 6]
+    mov bx, [bp + 4]
+    int 13h
+
+    mov sp, bp
+    pop bp
+    ret
 
 ; getFileEntry:
 
