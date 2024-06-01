@@ -44,6 +44,21 @@ print:
         popa
         ret
 
+print_di:
+    pusha
+    .loop_printing:
+    mov al, es:[di]
+    inc di
+    or al,al
+    jz .loopEnd_printing
+    mov ah, 0x0e
+    int 10h
+    jmp .loop_printing
+
+    .loopEnd_printing:
+        popa
+        ret
+
 dump16Registers:
 
     ; AX

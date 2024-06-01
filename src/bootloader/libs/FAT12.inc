@@ -16,6 +16,7 @@ bits 16
 ;   Includes
 ;*****************
 %include "Utilities.inc"
+%include "Stdio16.inc"
 
 ;*****************
 ;   BPB Copy
@@ -41,6 +42,9 @@ bits 16
     numberOfHeads:      resb 1
     numberOfCylinders:  resb 2
     numberOfSectors:    resb 1
+
+    dirEndByte:         db 0h
+    fileEntryNotFoundMsg: db 'File entry not found!', 0x0A, 0xD, 0
 
 ;*****************
 ;   Macros
@@ -146,23 +150,6 @@ prepareFAT12Params:
     push word [bp + 4]    ; RootDirOffset 
     call loadRootDirectory
 
-    mov es, [bp + 6]
-    mov di, [bp + 4]
-    mov ax, es:[di]
-
-    pusha
-    call dump16Registers
-    popa
-
-    mov es, [bp + 10]
-    mov di, [bp + 8]
-    mov ax, es:[di]
-
-    pusha
-    call dump16Registers
-    popa
-
-
     mov sp, bp
     pop bp
     ret
@@ -254,8 +241,48 @@ loadRootDirectory:
     pop bp
     ret
 
-; getFileEntry:
+getFileEntry:
+    push bp
+    mov bp, sp
 
+    ; [bp + 4] -> kernelName
+    ; [bp + 6] -> rootDirOffset
+    ; [bp + 8] -> rootDirSegment
+
+    mov es, [bp + 8]
+    mov di, [bp + 6]
+    .loop_NameCompare:
+        ; Verify if is the end of dir, decrement di to starting value
+        mov si, dirEndByte
+        cmpsb
+        je .dirEnd
+        dec di
+
+        ; Get filename address
+        mov si, [bp + 4]
+        
+        ; Compare names
+        mov cx, 11
+        rep cmpsb
+        je .fileFound
+
+        ; Go to next file entry = (di + 32) - 11 cause cmpsb increment in di
+        add di, 31
+        jmp .loop_NameCompare
+    
+    .dirEnd:
+        stc
+        mov si, fileEntryNotFoundMsg
+        call print
+
+        mov sp, bp
+        pop bp
+        ret
+    .fileFound:
+        sub di, 11
+        mov sp, bp
+        pop bp
+        ret
 ; loadClusters:
 
 ;*****************

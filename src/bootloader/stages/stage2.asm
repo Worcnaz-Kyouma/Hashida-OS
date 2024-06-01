@@ -30,6 +30,9 @@ start: jmp entryPoint
     FATOffset:      dw 0x0
     FATSegment:     dw 0x1000
 
+;*****************
+;   Code
+;*****************
 prepareStage2:
     mov ax, 0x8000
     mov ds, ax
@@ -49,8 +52,6 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
-    ; Fix stack? Strange error?
-
     ; Prepare FAT12.inc
     push word [FATSegment]
     push word [FATOffset]
@@ -58,11 +59,14 @@ entryPoint:
     push word [rootDirOffset]
     call prepareFAT12Params
 
-    ; ; Get Kernel Entry
-    ; push [rootDirSegment]
-    ; push [rootDirOffset]
-    ; push kernelName
-    ; call getFileEntry           ; di = fileEntry offset
+    ; Get Kernel Entry
+    push word [rootDirSegment]
+    push word [rootDirOffset]
+    push kernelName
+    call getFileEntry           ; di = fileEntry offset
+
+    ; mov es, [rootDirSegment]
+    ; call print_di
 
     ; mov es, [rootDirSegment]
 
