@@ -54,6 +54,7 @@ numberOfSectors:    resb 1
 ;******************************
 ;   Important values
 ;******************************
+; driveNumber:        db 0h
 rootDirStart:   resb 2
 dataReg:        resb 2
 stage2Name      db "STAGE2  BIN"
@@ -130,6 +131,7 @@ ParseLBAtoCHS:
     div bx
 
     pop dx ; Head
+    shl dx, 8
     pop cx ; Sector(CL)
     mov ch, al ; Cylinder
 

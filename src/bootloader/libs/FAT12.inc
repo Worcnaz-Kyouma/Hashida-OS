@@ -120,6 +120,7 @@ parseLBAtoCHS:
     div_simple cx, bx
 
     pop dx ; Head
+    shl dx, 8
     pop cx ; Sector(CL)
     mov ch, al ; Cylinder
 
