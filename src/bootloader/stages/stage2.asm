@@ -16,7 +16,8 @@ start: jmp entryPoint
 ;   Common Variables
 ;*****************
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
-    kernelName db 'KERNEL  BIN'
+    ; kernelName db 'KERNEL  BIN'
+    kernelName db 'STAGE2  BIN'
 
     kernelOffset:    resb 2
     kernelSegment:   resb 2
@@ -68,17 +69,17 @@ entryPoint:
     ; mov es, [rootDirSegment]
     ; call print_di
 
-    ; mov es, [rootDirSegment]
+    mov es, [rootDirSegment]
 
-    ; mov ax, es:[di + 26]        ; First Kernel Cluster
+    mov ax, es:[di + 26]        ; First Kernel Cluster
 
-    ; ; Load Kernel
-    ; push [FATSegment]
-    ; push [FATOffset]
-    ; push [kernelSegment]
-    ; push [kernelOffset]
-    ; push ax                     ; First cluster
-    ; call loadClusters
+    ; Load Kernel
+    push word [FATSegment]
+    push word [FATOffset]
+    push word [kernelSegment]
+    push word [kernelOffset]
+    push ax                     ; First cluster
+    call loadClusters
     
     ; ; Enable A20
     ; ; ????????

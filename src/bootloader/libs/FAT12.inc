@@ -283,7 +283,80 @@ getFileEntry:
         mov sp, bp
         pop bp
         ret
-; loadClusters:
+loadClusters:
+    push bp
+    mov bp, sp
+
+    ; [bp + 4]  -> First cluster
+    ; [bp + 6]  -> destinationOffset
+    ; [bp + 8]  -> destinationSegment
+    ; [bp + 10] -> FATOffset
+    ; [bp + 12] -> FATSegment
+
+    ; RootDir Start
+    movzx ax, byte [bpbNumberOfFATs]
+    mul_simple ax, [bpbSectorsPerFAT]
+    add ax, [bpbReservedSectors]
+    push ax
+
+    ; Data region start
+    mul_simple [bpbRootDirEntries], 32
+    div_simple ax, [bpbBytesPerSector]
+    inc ax
+    pop bx
+    add ax, bx
+
+    push ax
+
+    ; First cluster
+    mov ax, [bp + 4]
+
+    sub ax, 2
+    movzx bx, byte [bpbSectorsPerCluster]
+    mul_simple ax, bx
+
+    ; Sector
+    pop bx
+    add ax, bx
+
+    push ax
+    call parseLBAtoCHS
+
+    ; Load sector
+    mov ah, 02h
+    mov al, 1
+    mov dl, [driveNumber]
+    mov es, [bp + 8]
+    mov bx, [bp + 6]
+    int 13h
+
+    ; Get next cluster offset into di with index
+    pop ax
+    push ax
+    mul_simple ax, 3
+    div_simple ax, 2
+    mov di, ax
+
+    ; Verify index parity 
+    pop ax
+    div_simple ax, 2
+    cmp dx, 0
+    je .evenFATIndex
+
+    ; Next cluster parse of odd index
+    mov ax, es:[di]
+    shr ax, 4
+    mov dx, ax
+
+    ; Next cluster parse of even index
+    .evenFATIndex:
+    mov ax, es:[di]
+    and ax, 0x0FFF
+    mov dx, ax
+
+    mov sp, bp
+    pop bp
+    ret
 
 ;*****************
 
