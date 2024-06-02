@@ -9,7 +9,7 @@ start: jmp entryPoint
 ;*****************
     %include "Utilities.inc"
     %include "Stdio16.inc"
-    %include "FAT12.inc"
+    ; %include "FAT12.inc"
 ;*****************
 
 ;*****************
@@ -53,44 +53,13 @@ entryPoint:
     mov si, welcomeStage2Msg
     call print
 
-    ; Prepare FAT12.inc
-    push word [FATSegment]
-    push word [FATOffset]
-    push word [rootDirSegment]
-    push word [rootDirOffset]
-    call prepareFAT12Params
-
-    ; Get Kernel Entry
-    push word [rootDirSegment]
-    push word [rootDirOffset]
-    push kernelName
-    call getFileEntry           ; di = fileEntry offset
-
-    ; mov es, [rootDirSegment]
-    ; call print_di
-
-    mov es, [rootDirSegment]
-
-    mov ax, es:[di + 26]        ; First Kernel Cluster
-
-    ; Load Kernel
-    push word [FATSegment]
-    push word [FATOffset]
-    push word [kernelSegment]
-    push word [kernelOffset]
-    push ax                     ; First cluster
-    call loadClusters
-    
-    ; ; Enable A20
-    ; ; ????????
-
-    ; ; Enable Protected Mode
-    ; ; create GDT
-    ; ; set GDTR(LGDT)
-    ; ; enable CR0 to Protected Mode
-
-    ; ; Run Kernel
-    ; ; ????????
+    ; B U G
+    mov bx, 0x8000
+    mov es, bx
+    mov di, 1024
+    mov ax, es:[di]
+    call dump16Registers
 
     cli
-    hlt
+    hlt   
+    times 2048 - ($-$$) db 2
