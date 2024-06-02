@@ -1,6 +1,6 @@
 bits 16
 
-org 0x0 ; 0x8000:0x0
+org 0x0 ; 0x1000:0x0
 
 start: jmp entryPoint
 
@@ -25,17 +25,17 @@ start: jmp entryPoint
 ;*****************
 ;   FAT12 Params
 ;*****************
-    rootDirOffset:  dw 0x0
-    rootDirSegment: dw 0x9000
+    FATOffset:      dw 0x0000
+    FATSegment:     dw 0x2000
 
-    FATOffset:      dw 0x0
-    FATSegment:     dw 0x1000
+    rootDirOffset:  dw 0x1200 ; FAT gets the first 9 sectors of the segment
+    rootDirSegment: dw 0x2000
 
 ;*****************
 ;   Code
 ;*****************
 prepareStage2:
-    mov ax, 0x8000
+    mov ax, 0x1000
     mov ds, ax
     mov es, ax
 
@@ -66,17 +66,16 @@ entryPoint:
     push kernelName
     call getFileEntry           ; di = fileEntry offset
 
-    mov es, [rootDirSegment]
+    ; mov es, [rootDirSegment]
+    ; mov ax, es:[di + 26]        ; First Kernel Cluster
 
-    mov ax, es:[di + 26]        ; First Kernel Cluster
-
-    ; Load Kernel
-    push word [FATSegment]
-    push word [FATOffset]
-    push word [kernelSegment]
-    push word [kernelOffset]
-    push ax                     ; First cluster
-    call loadClusters
+    ; ; Load Kernel
+    ; push word [FATSegment]
+    ; push word [FATOffset]
+    ; push word [kernelSegment]
+    ; push word [kernelOffset]
+    ; push ax                     ; First cluster
+    ; call loadClusters
     
     ; ; Enable A20
     ; ; ????????

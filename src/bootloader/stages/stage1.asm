@@ -63,7 +63,7 @@ stage2Name      db "STAGE2  BIN"
 ; rootDirectoryOffset:    dw 0x0500
 
 ; stage2Offset:           dw 0x0
-; stage2Segment:          dw 0x8000
+; stage2Segment:          dw 0x1000
 
 
 ;******************************
@@ -250,7 +250,7 @@ LoadFile:
         mov ah, 02h
         mov al, [bpbSectorsPerCluster]
         mov dl, 0h
-        mov bx, 0x8000
+        mov bx, 0x1000
         mov es, bx
         pop bx ; That limit the second stage just to 65536 bytes (128 sectors, cause 0x0 point to the first one, more than that result in overflow here and load didnt work anymore)
         int 13h
@@ -341,7 +341,7 @@ loader:
     ; Read file into stage2Offset
     call LoadFile
 
-    jmp 0x8000:0
+    jmp 0x1000:0
 
 times 510 - ($-$$) db 0
 dw 0x55AA
