@@ -47,7 +47,6 @@ start: jmp loader
 ;******************************
 ;   Disk parameters(int 13h, AH=08h)
 ;******************************
-driveNumber:        db 0h
 numberOfHeads:      resb 1
 numberOfCylinders:  resb 2
 numberOfSectors:    resb 1
@@ -71,7 +70,7 @@ stage2Name      db "STAGE2  BIN"
 ;******************************
 ResetDiskSystem:
     mov ah, 0
-    mov dl, [driveNumber]
+    mov dl, 0h
     int 13h
 
 PopulateDiskParameters:
@@ -79,7 +78,7 @@ PopulateDiskParameters:
     mov es, ax
     mov di, ax
     mov ah, 08h
-    mov dl, [driveNumber]
+    mov dl, 0h
     int 13h
 
     mov bl, cl
@@ -160,7 +159,7 @@ ReadRootDirectory:
 
     mov ah, 02h
     mov al, bl
-    mov dl, [driveNumber]
+    mov dl, 0h
     xor bx, bx
     mov es, bx
     mov bx, 0x0500
@@ -198,7 +197,7 @@ LoadFile:
     mov ch, 0
     mov cl, 2
     mov dh, 0
-    mov dl, [driveNumber]
+    mov dl, 0h
     mov bx, 0x4434
     mov es, bx
     xor bx, bx
@@ -248,7 +247,7 @@ LoadFile:
 
         mov ah, 02h
         mov al, [bpbSectorsPerCluster]
-        mov dl, [driveNumber]
+        mov dl, 0h
         mov bx, 0x8000
         mov es, bx
         pop bx ; That limit the second stage just to 65536 bytes (128 sectors, cause 0x0 point to the first one, more than that result in overflow here and load didnt work anymore)
@@ -257,6 +256,7 @@ LoadFile:
 
         mov cx, bx
 
+        xor dx, dx
         mov ax, [bpbSectorsPerCluster]
         mov bx, [bpbBytesPerSector]
         mul bx
