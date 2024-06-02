@@ -44,7 +44,11 @@ bits 16
     numberOfSectors:    resb 1
 
     dirEndByte:         db 0h
-    fileEntryNotFoundMsg: db 'File entry not found!', 0x0A, 0xD, 0
+    fileEntryNotFoundMsg:   db 'File entry not found ;~;', 0x0A, 0xD, 0
+    fileEntryFoundMsg:      db 'File entry found! :D', 0x0A, 0xD, 0
+
+    loadClustersSucessMsg:  db 'File successfully loaded! :D', 0x0A, 0xD, 0
+    loadClustersErrorMsg:   db 'File NOT successfully loaded... we got an error :C', 0x0A, 0xD, 0
 
 ;*****************
 ;   Macros
@@ -280,6 +284,9 @@ getFileEntry:
         pop bp
         ret
     .fileFound:
+        mov si, fileEntryFoundMsg
+        call print
+
         sub di, 11
         mov sp, bp
         pop bp
@@ -294,71 +301,55 @@ loadClusters:
     ; [bp + 10] -> FATOffset
     ; [bp + 12] -> FATSegment
 
-    ; RootDir Start
-    movzx ax, byte [bpbNumberOfFATs]
-    mul_simple ax, [bpbSectorsPerFAT]
-    add ax, [bpbReservedSectors]
-    push ax
-
-    ; Data region start
-    mul_simple [bpbRootDirEntries], 32
-    div_simple ax, [bpbBytesPerSector]
-    inc ax
-    pop bx
-    add ax, bx
-
-    push ax
-
     ; First cluster
-    mov ax, [bp + 4]
+    mov dx, [bp + 4]
 
-    sub ax, 2
-    movzx bx, byte [bpbSectorsPerCluster]
-    mul_simple ax, bx
-
-    ; Sector
-    pop bx
-    add ax, bx
-
-    push ax
-    call parseLBAtoCHS
-
-    ; Load sector
-    mov ah, 02h
-    mov al, 1
-    mov dl, [driveNumber]
+    ; Starting segment and offset
     mov es, [bp + 8]
-    mov bx, [bp + 6]
-    int 13h
+    mov di, [bp + 6]
 
-    ; Get next cluster offset into di with index
-    pop ax
-    push ax
-    mul_simple ax, 3
-    div_simple ax, 2
-    mov di, ax
+    .loop_loadingClusters:
+        cmp dx, 0xFF8
+        jae .loopEnd_loadedClusters
 
-    ; Verify index parity 
-    pop ax
-    div_simple ax, 2
-    cmp dx, 0
-    je .evenFATIndex
+        cmp dx, 0x002
+        jbe .loopEnd_clusterError
+        cmp dx, 0xFF7
+        jbe .loopEnd_clusterError
 
-    ; Next cluster parse of odd index
-    mov ax, es:[di]
-    shr ax, 4
-    mov dx, ax
+        push dx             ; cluster
+        push di             ; destinationOffset
+        push es             ; destinationSegment
+        push word [bp + 10] ; FATOffset
+        push word [bp + 12] ; FATSegment
+        call loadCluster ; Returns the next values in ES, DI and output the current cluster into dx
 
-    ; Next cluster parse of even index
-    .evenFATIndex:
-    mov ax, es:[di]
-    and ax, 0x0FFF
-    mov dx, ax
+        push dx             ; cluster
+        push word [bp + 10] ; FATOffset
+        push word [bp + 12] ; FATSegment
+        call getNextCluster ; Returns the next cluster into dx
+
+        jmp .loop_loadingClusters
+
+    .loopEnd_loadedClusters
+    mov si, loadClustersSucessMsg
+    call print
 
     mov sp, bp
     pop bp
     ret
 
+    .loopEnd_clusterError
+    stc
+    mov si, loadClustersErrorMsg
+    call print
+
+    mov sp, bp
+    pop bp
+    ret
+
+loadCluster:
+getNextCluster:
 ;*****************
 
 %endif ;__FAT12_INC_3444_INCLUDED__
