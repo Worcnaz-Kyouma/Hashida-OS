@@ -20,38 +20,46 @@ bits 16
 ;   Macros
 ;*****************
 %macro mul_simple 2
-    xor dx, dx
     mov ax, %1
     push bx
     mov bx, %2
+    
+    xor dx, dx
     mul bx
+
     pop bx
 %endmacro
 
 %macro mul_simple_8 2
-    xor dx, dx
     mov al, %1
     push bx
     mov bl, %2
+
+    xor dx, dx
     mul bl
+
     pop bx
 %endmacro
 
 %macro div_simple 2
-    xor dx, dx
     mov ax, %1
     push bx
     mov bx, %2
+
+    xor dx, dx
     div bx
+
     pop bx
 %endmacro
 
 %macro div_simple_8 2
-    xor dx, dx
     mov al, %1
     push bx
     mov bl, %2
+
+    xor dx, dx
     div bl
+
     pop bx
 %endmacro
 

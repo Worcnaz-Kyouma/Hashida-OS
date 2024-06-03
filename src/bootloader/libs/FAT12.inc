@@ -50,7 +50,7 @@ bits 16
     loadClustersSucessMsg:      db 'File successfully loaded! :D', 0x0A, 0xD, 0
     loadClustersErrorMsg:       db 'File NOT successfully loaded... we got an error :C', 0x0A, 0xD, 0
     dataRegionStartLBA:         resb 2
-    segmentOverflowErrorMsg:    db 'Damn bro, your file is too large for us to handle, passed the 0x9000 segment, sorry :C', 0x0A, 0xD, 0
+    segmentInvalidErrorMsg:    db 'Damn bro, your file is too large for us to handle, passed the 0x9000 segment, sorry :C', 0x0A, 0xD, 0
 
 ;*****************
 ;   Macros
@@ -326,28 +326,40 @@ loadClusters:
     ; First cluster
     mov dx, [bp + 4]
 
-    ; Starting segment and offset
-    mov es, [bp + 8]
-    mov di, [bp + 6]
+    ; Starting destination segment and offset into stack
+    push word [bp + 6]
+    push word [bp + 8]
 
     .loop_loadingClusters:
+        ; Get destination segment and offset from stack
+        pop es
+        pop di
+
+        ; Test end of file
         cmp dx, 0xFF8
         jae .loopEnd_loadedClusters
 
+        ; Test cluster error
         cmp dx, 0x002
         jbe .loopEnd_clusterError
         cmp dx, 0xFF7
-        jbe .loopEnd_clusterError
-
+        je .loopEnd_clusterError
+    
+        ; Load current cluster
         push dx             ; cluster
         push di             ; destinationOffset
         push es             ; destinationSegment
         call loadCluster    ; Returns the next values in ES, DI and output the current cluster into dx
 
+        ; Next destination segment and offset into stack
+        push di
+        push es
+
         push dx             ; cluster
         push word [bp + 10] ; FATOffset
         push word [bp + 12] ; FATSegment
         call getNextCluster ; Returns the next cluster into dx
+        add sp, 6
 
         jmp .loop_loadingClusters
 
@@ -376,6 +388,13 @@ loadCluster:
     ; [bp + 6]  -> destinationOffset
     ; [bp + 8]  -> cluster
 
+    ; Verify if is valid segment
+    mov bx, [bp + 4]
+    cmp bx, 0xA000
+    jae .segmentInvalidError
+    cmp bx, 0x2000
+    jbe .segmentInvalidError
+
     ; Cluster to first sector LBA
     mov ax, [bp + 8]
     sub ax, 2
@@ -386,6 +405,7 @@ loadCluster:
     push ax
     call parseLBAtoCHS
 
+    ; Load cluster
     mov ah, 02h
     mov al, [bpbSectorsPerCluster]
     mov dl, [driveNumber]
@@ -393,31 +413,35 @@ loadCluster:
     mov bx, [bp + 6]
     int 13h
 
-    mov dx, [bp + 8]   ; Current cluster
-
+    ; Calculate next address
     mul_simple [bpbSectorsPerCluster], [bpbBytesPerSector]
     add bx, ax
+    mov di, bx
     jc .segmentEnd
+
+    mov dx, [bp + 8]   ; Current cluster
 
     mov sp, bp
     pop bp
     ret
 
+    ; End of current loading segment, get next segment summing 0x1000
     .segmentEnd:
     mov bx, es
     add bx, 0x1000
-    cmp bx, 0xA000
-    jae .segmentOverflowError
     mov es, bx
-    xor bx, bx
+    xor di, di
+
+    mov dx, [bp + 8]   ; Current cluster
 
     mov sp, bp
     pop bp
     ret
 
-    .segmentOverflowError:
+    ; Invalid segment, throw error
+    .segmentInvalidError:
     stc
-    mov si, segmentOverflowErrorMsg
+    mov si, segmentInvalidErrorMsg
     call print
 
     mov sp, bp

@@ -27,5 +27,13 @@ entryPoint:
     mov si, welcomeStageTesterMsg
     call print
 
+    mov bx, 0x9000
+    mov es, bx
+    mov di, 0xFFFF
+
+    mov al, es:[di]
+    call dump16Registers
+
     cli
     hlt
+    times 458752 - ($-$$) db 2
