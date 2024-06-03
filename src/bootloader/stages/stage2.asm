@@ -17,10 +17,10 @@ start: jmp entryPoint
 ;*****************
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
     ; kernelName db 'KERNEL  BIN'
-    kernelName db 'STAGE2  BIN'
+    testStageName db 'STAGET  BIN'
 
-    kernelOffset:    resb 2
-    kernelSegment:   resb 2
+    kernelOffset:    dw 0x0000
+    kernelSegment:   dw 0x3000
 
 ;*****************
 ;   FAT12 Params
@@ -63,19 +63,21 @@ entryPoint:
     ; Get Kernel Entry
     push word [rootDirSegment]
     push word [rootDirOffset]
-    push kernelName
+    push testStageName
     call getFileEntry           ; di = fileEntry offset
 
-    ; mov es, [rootDirSegment]
-    ; mov ax, es:[di + 26]        ; First Kernel Cluster
+    mov es, [rootDirSegment]
+    mov ax, es:[di + 26]        ; First Kernel Cluster
 
-    ; ; Load Kernel
-    ; push word [FATSegment]
-    ; push word [FATOffset]
-    ; push word [kernelSegment]
-    ; push word [kernelOffset]
-    ; push ax                     ; First cluster
-    ; call loadClusters
+    ; Load Kernel
+    push word [FATSegment]
+    push word [FATOffset]
+    push word [kernelSegment]
+    push word [kernelOffset]
+    push ax                     ; First cluster
+    call loadClusters
+
+    jmp 0x3000:0
     
     ; ; Enable A20
     ; ; ????????

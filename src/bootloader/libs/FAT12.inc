@@ -259,6 +259,9 @@ getFileEntry:
     mov es, [bp + 8]
     mov di, [bp + 6]
     .loop_NameCompare:
+        ; Store di to get it back later, summing 32 to the next entry in the end
+        push di
+
         ; Verify if is the end of dir, decrement di to starting value
         mov si, dirEndByte
         cmpsb
@@ -273,8 +276,9 @@ getFileEntry:
         rep cmpsb
         je .fileFound
 
-        ; Go to next file entry = (di + 32) - 11 cause cmpsb increment in di
-        add di, 31
+        ; Go to next file entry = (initial di + 32)
+        pop di
+        add di, 32
         jmp .loop_NameCompare
     
     .dirEnd:
@@ -367,8 +371,8 @@ loadCluster:
     mov bp, sp
 
     ; [bp + 4]  -> destinationSegment
-    ; [bp + 6] -> destinationOffset
-    ; [bp + 8] -> cluster
+    ; [bp + 6]  -> destinationOffset
+    ; [bp + 8]  -> cluster
 
     ; Cluster to first sector LBA
     mov ax, [bp + 8]
