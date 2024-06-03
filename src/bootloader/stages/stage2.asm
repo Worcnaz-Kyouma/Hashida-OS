@@ -10,6 +10,7 @@ start: jmp entryPoint
     %include "Utilities.inc"
     %include "Stdio16.inc"
     %include "FAT12.inc"
+    %include "A20.inc"
 ;*****************
 
 ;*****************
