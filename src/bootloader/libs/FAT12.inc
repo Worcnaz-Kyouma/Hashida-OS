@@ -282,6 +282,8 @@ getFileEntry:
         jmp .loop_NameCompare
     
     .dirEnd:
+        pop di
+
         stc
         mov si, fileEntryNotFoundMsg
         call print
@@ -293,7 +295,7 @@ getFileEntry:
         mov si, fileEntryFoundMsg
         call print
 
-        sub di, 11
+        pop di
         mov sp, bp
         pop bp
         ret
