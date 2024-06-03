@@ -1,8 +1,10 @@
 ;******************
 ;   General IO utilities, like print things in screen
 ;   Functions:
-;       - print: prints array of chars that ends with 0, based in SI register
-;       - dumpRegisters: dump all 16 bits registers into the screen
+;       - print: Prints array of chars that ends with 0, based in SI register
+;       - print_di: Prints array of chars that ends with 0, based in ES:[DI] registers
+;       - dumpRegisters: Dump all 16 bits registers into the screen
+;       - parseAxRegisterIntoAscii: Parse ax register content into ascii, putting the address into the si
 ;******************
 
 %ifndef __STDIO16_INC_3444_INCLUDED__

@@ -76,8 +76,7 @@ entryPoint:
     push ax                     ; First cluster
     call loadClusters
     
-    ; ; Enable A20
-    ; ; ????????
+    call enableA20
 
     ; ; Enable Protected Mode
     ; ; create GDT

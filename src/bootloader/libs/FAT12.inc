@@ -1,10 +1,17 @@
 ;******************
 ;   All logic to communicate with the disk in FAT 12 file system, through the BIOS services, precisely the int 13h
 ;   Functions:
-;       - prepareFAT12Params: Prepare extern and intern params necessary to disk communication
-;       - parseLBAtoCHS: Parse LBA value to CHS values, already in good registers for int 13h interface (CX[7:6][15:8] = cylinder, CL[5:0] = sector, dh = head)
 ;       - resetDiskSystem: Reset the disk system... what more you expected?
 ;       - populateDiskParameters: Populate important params of FAT12 code, like numberOfHeads, numberOfCylinders and numberOfSectors
+;       - parseLBAtoCHS: Parse LBA value to CHS values, already in good registers for int 13h interface (CX[7:6][15:8] = cylinder, CL[5:0] = sector, dh = head)
+;       - prepareFAT12Params: Prepare extern and intern params necessary to disk communication
+;       - copyBPB: Copies the BPB from 0x0:7c00 to FAT12 code lib, the bootloader BPB
+;       - loadFAT: Loads the FAT table into a desired address and segment
+;       - loadRootDirectory: Loads the root directory into a desired address and segment
+;       - getFileEntry: Get the file entry in a given directory
+;       - loadClusters: Loads a sequence of clusters
+;       - loadCluster: Loads one given cluster
+;       - getNextCluster: Get the next cluster of the input cluster
 ;******************
 
 %ifndef __FAT12_INC_3444_INCLUDED__
@@ -174,7 +181,7 @@ copyBPBParam:
 copyBPB:
     xor bx, bx
     mov es, bx
-    ; 
+
     copy_bpb_param 0x03, bpbOEMIdentifier,      8
     copy_bpb_param 0x0B, bpbBytesPerSector,     2
     copy_bpb_param 0x0D, bpbSectorsPerCluster,  1
