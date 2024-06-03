@@ -174,7 +174,7 @@ copyBPBParam:
 copyBPB:
     xor bx, bx
     mov es, bx
-    
+    ; 
     copy_bpb_param 0x03, bpbOEMIdentifier,      8
     copy_bpb_param 0x0B, bpbBytesPerSector,     2
     copy_bpb_param 0x0D, bpbSectorsPerCluster,  1
