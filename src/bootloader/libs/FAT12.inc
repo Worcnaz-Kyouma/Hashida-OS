@@ -43,12 +43,14 @@ bits 16
     numberOfCylinders:  resb 2
     numberOfSectors:    resb 1
 
-    dirEndByte:         db 0h
+    dirEndByte:             db 0h
     fileEntryNotFoundMsg:   db 'File entry not found ;~;', 0x0A, 0xD, 0
     fileEntryFoundMsg:      db 'File entry found! :D', 0x0A, 0xD, 0
 
-    loadClustersSucessMsg:  db 'File successfully loaded! :D', 0x0A, 0xD, 0
-    loadClustersErrorMsg:   db 'File NOT successfully loaded... we got an error :C', 0x0A, 0xD, 0
+    loadClustersSucessMsg:      db 'File successfully loaded! :D', 0x0A, 0xD, 0
+    loadClustersErrorMsg:       db 'File NOT successfully loaded... we got an error :C', 0x0A, 0xD, 0
+    dataRegionStartLBA:         resb 2
+    segmentOverflowErrorMsg:    db 'Damn bro, your file is too large for us to handle, passed the 0x9000 segment, sorry :C', 0x0A, 0xD, 0
 
 ;*****************
 ;   Macros
@@ -301,6 +303,20 @@ loadClusters:
     ; [bp + 10] -> FATOffset
     ; [bp + 12] -> FATSegment
 
+    ; Data Region calculation
+    ; RootDir Start
+    movzx ax, byte [bpbNumberOfFATs]
+    mul_simple ax, [bpbSectorsPerFAT]
+    add ax, [bpbReservedSectors]
+    push ax
+
+    ; Data Region Start
+    mul_simple [bpbRootDirEntries], 32
+    div_simple ax, [bpbBytesPerSector]
+    pop dx
+    add ax, dx
+    mov [dataRegionStartLBA], ax
+
     ; First cluster
     mov dx, [bp + 4]
 
@@ -322,7 +338,7 @@ loadClusters:
         push es             ; destinationSegment
         push word [bp + 10] ; FATOffset
         push word [bp + 12] ; FATSegment
-        call loadCluster ; Returns the next values in ES, DI and output the current cluster into dx
+        call loadCluster    ; Returns the next values in ES, DI and output the current cluster into dx
 
         push dx             ; cluster
         push word [bp + 10] ; FATOffset
@@ -349,6 +365,63 @@ loadClusters:
     ret
 
 loadCluster:
+    push bp
+    mov bp, sp
+
+    ; [bp + 4]  -> FATSegment
+    ; [bp + 6]  -> FATOffset
+    ; [bp + 8]  -> destinationSegment
+    ; [bp + 10] -> destinationOffset
+    ; [bp + 12] -> cluster
+
+    ; Cluster to first sector LBA
+    mov ax, [bp + 12]
+    sub ax, 2
+    movzx dx, byte [bpbSectorsPerCluster]
+    mul_simple ax, dx
+    add ax, [dataRegionStartLBA]
+
+    push ax
+    call parseLBAtoCHS
+
+    mov ah, 02h
+    mov al, [bpbSectorsPerCluster]
+    mov dl, [driveNumber]
+    mov es, [bp + 8]
+    mov bx, [bp + 10]
+    int 13h
+
+    mov dx, [bp + 12]   ; Current cluster
+
+    mul_simple [bpbSectorsPerCluster], [bpbBytesPerSector]
+    add bx, ax
+    jc .segmentEnd
+
+    mov sp, bp
+    pop bp
+    ret
+
+    .segmentEnd:
+    mov bx, es
+    add bx, 0x1000
+    cmp bx, 0xA000
+    jae .segmentOverflowError
+    mov es, bx
+    xor bx, bx
+
+    mov sp, bp
+    pop bp
+    ret
+
+    .segmentOverflowError:
+    stc
+    mov si, segmentOverflowErrorMsg
+    call print
+
+    mov sp, bp
+    pop bp
+    ret
+
 getNextCluster:
 ;*****************
 
