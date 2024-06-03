@@ -419,6 +419,47 @@ loadCluster:
     ret
 
 getNextCluster:
+    push bp
+    mov bp, sp
+
+    ; [bp + 4] -> FATSegment
+    ; [bp + 6] -> FATOffset
+    ; [bp + 8] -> cluster
+
+    ; Load FAT Segment
+    mov es, [bp + 4]
+
+    ; Get FAT offset of next cluster into di
+    mul_simple [bp + 8], 3
+    div_simple ax, 2
+    mov di, ax
+
+    ; Get FAT index parity
+    div_simple [bp + 8], 2
+    cmp dx, 0
+    je .evenFATIndex
+
+    ; Parse next FAT cluster using index parity
+
+    ; Odd index
+    mov ax, es:[di]
+    shr ax, 4
+    mov dx, ax
+
+    mov sp, bp
+    pop bp
+    ret
+
+    ; Even index
+    .evenFATIndex
+    mov ax, es:[di]
+    and ax, 0x0FFF
+    mov dx, ax
+
+    mov sp, bp
+    pop bp
+    ret
+
 ;*****************
 
 %endif ;__FAT12_INC_3444_INCLUDED__
