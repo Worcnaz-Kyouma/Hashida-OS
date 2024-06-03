@@ -336,8 +336,6 @@ loadClusters:
         push dx             ; cluster
         push di             ; destinationOffset
         push es             ; destinationSegment
-        push word [bp + 10] ; FATOffset
-        push word [bp + 12] ; FATSegment
         call loadCluster    ; Returns the next values in ES, DI and output the current cluster into dx
 
         push dx             ; cluster
@@ -368,14 +366,12 @@ loadCluster:
     push bp
     mov bp, sp
 
-    ; [bp + 4]  -> FATSegment
-    ; [bp + 6]  -> FATOffset
-    ; [bp + 8]  -> destinationSegment
-    ; [bp + 10] -> destinationOffset
-    ; [bp + 12] -> cluster
+    ; [bp + 4]  -> destinationSegment
+    ; [bp + 6] -> destinationOffset
+    ; [bp + 8] -> cluster
 
     ; Cluster to first sector LBA
-    mov ax, [bp + 12]
+    mov ax, [bp + 8]
     sub ax, 2
     movzx dx, byte [bpbSectorsPerCluster]
     mul_simple ax, dx
@@ -387,11 +383,11 @@ loadCluster:
     mov ah, 02h
     mov al, [bpbSectorsPerCluster]
     mov dl, [driveNumber]
-    mov es, [bp + 8]
-    mov bx, [bp + 10]
+    mov es, [bp + 4]
+    mov bx, [bp + 6]
     int 13h
 
-    mov dx, [bp + 12]   ; Current cluster
+    mov dx, [bp + 8]   ; Current cluster
 
     mul_simple [bpbSectorsPerCluster], [bpbBytesPerSector]
     add bx, ax
