@@ -79,10 +79,16 @@ entryPoint:
     
     call enableA20
 
-    ; ; Enable Protected Mode
-    ; ; create GDT
-    ; ; set GDTR(LGDT)
-    ; ; enable CR0 to Protected Mode
+    call preparePMODE
+
+    ; ; Enable PMODE
+    ; cli
+    ; mov eax, cr0
+    ; or eax, 1
+    ; mov cr0, eax
+
+    ; ; Immediate jmp to adjust CS
+    ; jmp 0x8:innerStage3
 
     ; ; Run Kernel
     ; ; ????????
