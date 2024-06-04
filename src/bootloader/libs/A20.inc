@@ -1,7 +1,11 @@
 ;******************
 ;   All logic involving A20 gate, like enabling it to reach 4 GB data address
 ;   Functions:
-;
+;       - verifyA20SupportBIOS: Use BIOS to verify the available methods to enable A20
+;       - enableA20: Enable A20 using all the available methods
+;       - enableA20WithBIOS: Enable A20 with BIOS int 0x15
+;       - enableA20WithSYSControl: Not implemented yet
+;       - enableA20WithKeyboardController: Not implemented yet
 ;******************
 
 %ifndef __A20_INC_3444_INCLUDED__

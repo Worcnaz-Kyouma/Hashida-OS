@@ -10,6 +10,7 @@ start: jmp entryPoint
     %include "Utilities.inc"
     %include "Stdio16.inc"
     %include "FAT12.inc"
+    %include "PMode.inc"
     %include "A20.inc"
 ;*****************
 
@@ -30,6 +31,9 @@ start: jmp entryPoint
 
     rootDirOffset:  dw 0x1200 ; FAT gets the first 9 sectors of the segment
     rootDirSegment: dw 0x2000
+
+    GDTOffset:  dw 0x3000 ; FAT + Root dir gets the first 15 sectors of the segment
+    GDTSegment: dw 0x2000
 
 ;*****************
 ;   Code
@@ -79,6 +83,8 @@ entryPoint:
     
     call enableA20
 
+    push word [GDTSegment]
+    push word [GDTOffset]
     call preparePMODE
 
     ; ; Enable PMODE
