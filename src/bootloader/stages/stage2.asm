@@ -107,8 +107,7 @@ entryPoint:
     mov cr0, eax
 
     ; Immediate jmp to adjust CS
-    db 0x66
-    jmp far [innerStage3Pointer]
+    jmp far dword [innerStage3Pointer]
 
 ;*****************
 ;   Entry point to inner stage 3
