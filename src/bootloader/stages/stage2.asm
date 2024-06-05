@@ -83,9 +83,9 @@ entryPoint:
     
     call enableA20
 
-    ; push word [GDTSegment]
-    ; push word [GDTOffset]
-    ; call preparePMODE
+    push word [GDTSegment]
+    push word [GDTOffset]
+    call preparePMODE
 
     call dump16Registers
 

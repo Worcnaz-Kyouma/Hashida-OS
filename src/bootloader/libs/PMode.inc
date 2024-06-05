@@ -18,6 +18,9 @@ bits 16
 ;   Utility variables
 ;*****************
     numberOfDescriptors:    dw 0
+    GDTPointer:
+        dw 0
+        dd 0
 
 ;*****************
 ;   Macros
@@ -131,28 +134,25 @@ loadGDTR:
     ; [bp + 4]  -> GDT Offset
     ; [bp + 6]  -> GDT Segment
 
-    ; Calculate the GDT base address
-    movzx eax, word [bp + 6]
-    movzx edx, word [bp + 4]
-
-    shl eax, 4
-    add eax, edx
-
-    ; ; Calculate the size of GDT
+    ; Calculate and save the size of GDT
     mul_simple [numberOfDescriptors], 64
     dec ax
+    mov [GDTPointer], ax
 
-    ; cli
-    ; lgdt [.gdt_pointer]
-    ; sti
+    ; Calculate and save the GDT base address
+    movzx eax, word [bp + 6]
+    movzx edx, word [bp + 4]
+    shl eax, 4
+    add eax, edx
+    mov [GDTPointer + 2], eax
+
+    cli
+    lgdt [GDTPointer]
+    sti
 
     mov sp, bp
     pop bp
     ret
-
-    .gdt_pointer:
-        DW ax
-        DD eax
 ;*****************
 
 %endif ;__PMODE_INC_3444_INCLUDED__
