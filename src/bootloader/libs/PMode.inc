@@ -17,7 +17,7 @@ bits 16
 ;*****************
 ;   Utility variables
 ;*****************
-
+    numberOfDescriptors:    dw 0
 
 ;*****************
 ;   Macros
@@ -47,9 +47,9 @@ preparePMODE:
     push word [bp + 4]
     call createGDT
 
-    ; push word [bp + 4]
-    ; push word [bp + 6]
-    ; call loadGDTR
+    push word [bp + 6]
+    push word [bp + 4]
+    call loadGDTR
 
     mov sp, bp
     pop bp
@@ -58,12 +58,17 @@ createGDT:
     push bp
     mov bp, sp
 
-    mov es, [bp + 6]
-    mov di, [bp + 4]
+    ; [bp + 4]  -> GDT Offset
+    ; [bp + 6]  -> GDT Segment
 
+    mov di, [bp + 4]
+    mov es, [bp + 6]
+    
     create_descriptor 0x0000, 0x0000, 0x00, 00000000b, 0000b, 0000b, 0x00
     create_descriptor 0xFFFF, 0x0000, 0x00, 10011010b, 1111b, 1100b, 0x00
     create_descriptor 0xFFFF, 0x0000, 0x00, 10010010b, 1111b, 1100b, 0x00
+
+    mov [numberOfDescriptors], dword 0x3
 
     mov sp, bp
     pop bp
@@ -118,7 +123,36 @@ createDescriptor:
     mov sp, bp
     pop bp
     ret
-; loadGDTR:
+
+loadGDTR:
+    push bp
+    mov bp, sp
+
+    ; [bp + 4]  -> GDT Offset
+    ; [bp + 6]  -> GDT Segment
+
+    ; Calculate the GDT base address
+    movzx eax, word [bp + 6]
+    movzx edx, word [bp + 4]
+
+    shl eax, 4
+    add eax, edx
+
+    ; ; Calculate the size of GDT
+    mul_simple [numberOfDescriptors], 64
+    dec ax
+
+    ; cli
+    ; lgdt [.gdt_pointer]
+    ; sti
+
+    mov sp, bp
+    pop bp
+    ret
+
+    .gdt_pointer:
+        DW ax
+        DD eax
 ;*****************
 
 %endif ;__PMODE_INC_3444_INCLUDED__
