@@ -144,7 +144,10 @@ loadGDTR:
     movzx edx, word [bp + 4]
     shl eax, 4
     add eax, edx
+
     mov [GDTPointer + 2], eax
+
+    mov ax, [GDTPointer + 4]
 
     cli
     lgdt [GDTPointer]
