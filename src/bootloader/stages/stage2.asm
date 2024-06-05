@@ -23,6 +23,10 @@ start: jmp entryPoint
     kernelOffset:    dw 0x0000
     kernelSegment:   dw 0x3000
 
+    innerStage3Pointer: 
+        dd 0
+        dw 0x0008
+
 ;*****************
 ;   FAT12 Params
 ;*****************
@@ -86,6 +90,15 @@ entryPoint:
     push word [GDTSegment]
     push word [GDTOffset]
     call preparePMODE
+
+    xor eax, eax
+    xor edx, edx
+    mov eax, innerStage3
+    mov edx, 0x1000
+    shl edx, 4
+    add eax, edx
+
+    mov [innerStage3Pointer], eax
     
     ; Enable PMODE
     cli
@@ -94,10 +107,8 @@ entryPoint:
     mov cr0, eax
 
     ; Immediate jmp to adjust CS
-    jmp 0x8:innerStage3
-
-    cli
-    hlt
+    db 0x66
+    jmp far [innerStage3Pointer]
 
 ;*****************
 ;   Entry point to inner stage 3
