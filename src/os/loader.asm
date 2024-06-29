@@ -5,6 +5,7 @@ section .text
     global loader
 
 loader:
+    mov word [0xb8000], 0xF030
     mov esp, kernel_stack
     call kernelMain
 
@@ -14,5 +15,6 @@ _stop:
     jmp _stop
 
 section .bss
+    align 4
     resb 2*1024*1024
     kernel_stack:

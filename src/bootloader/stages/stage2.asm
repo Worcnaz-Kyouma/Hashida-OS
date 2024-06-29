@@ -115,6 +115,59 @@ entryPoint:
 
 bits 32
 
+parseAxRegisterIntoAscii_pointer_asciiRegister_2 db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x0A, 0xD, 0
+
+print_2:
+    mov edi, 0xb8000
+
+    pusha
+    .loop_printing:
+    lodsb
+    or al,al
+    jz .loopEnd_printing
+    mov [edi], al
+    add edi, 2
+    jmp .loop_printing
+
+    .loopEnd_printing:
+        popa
+        ret
+
+dump16Registers_2:
+
+    ; AX
+    mov eax, eax
+    call parseAxRegisterIntoAscii_2
+    call print_2
+
+    ret
+    
+
+parseAxRegisterIntoAscii_2:
+    pusha
+    lea esi, parseAxRegisterIntoAscii_pointer_asciiRegister_2
+    add esi, 38
+    mov ecx, 39
+    .loop_asciiRegister:
+        mov bl, [esi]
+        cmp bl, 0x20
+        je .loopEnd_asciiRegister
+
+        mov ebx, eax
+        and ebx, 00000000000000000000000000000001b
+        add bl, 00110000b
+        mov [esi], bl
+
+        shr eax, 1
+        .loopEnd_asciiRegister:
+        dec esi
+        loop .loop_asciiRegister
+
+    popa
+    
+    mov esi, parseAxRegisterIntoAscii_pointer_asciiRegister_2
+    ret
+
 parseRealModeAddressing:
     push ebp
     mov ebp, esp
@@ -144,6 +197,8 @@ fetchKernel:
 
     pop esi 
     push esi
+
+    mov edx, esi
 
     add esi, eax    ; Start of program header table
 
@@ -186,11 +241,15 @@ fetchSegment:
     mov eax, [esi]
     pop esi
     push esi
+    mov esi, edx    ; This takes the real offset of ELF
     add esi, eax    ; Segment start in ELF
 
     .fetchingSegment
         mov eax, [esi]
         mov [edi], eax
+
+        add esi, 4
+        add edi, 4
         loop .fetchingSegment
 
     .goNextFetch:
@@ -230,10 +289,13 @@ innerStage3:
     
     push word [kernelOffset]
     push word [kernelSegment]
-    call parseRealModeAddressing    ; esi = start of Kernel ELF
+    call parseRealModeAddressing    ; esi = start of Kernel ELF ; NEED FIX!
+    mov esi, 0x00030000
 
     call fetchKernel
     call getEntryPoint      ; edi = entry point to jump into
+    
+    jmp 0x1001d0
 
     ; Printing that will save us
     ; mov word [0xb8000], 0xF030
