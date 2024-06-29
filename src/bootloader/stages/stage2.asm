@@ -19,7 +19,7 @@ start: jmp entryPoint
 ;*****************
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
     kernelName db   'HSKERNELBIN'
-    
+
     kernelOffset:    dw 0x0000
     kernelSegment:   dw 0x3000
 
@@ -115,10 +115,130 @@ entryPoint:
 
 bits 32
 
-innerStage3:
-    mov		ax, 0x10		; set data segments to data selector (0x10)
-	mov		ds, ax
-	mov		ss, ax
-	mov		es, ax
+parseRealModeAddressing:
+    push ebp
+    mov ebp, esp
+
+    ; [ebp + 8] -> Segment
+    ; [ebp + 12] -> Offset
+
+    mov eax, [ebp + 12]
+    mov edx, [ebp + 8]
+    shl edx, 4
+    add eax, edx
+
+    mov esi, eax
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+fetchKernel:
+    push ebp
+    mov ebp, esp
+
+    push esi
+
+    add esi, 0x1C 
+    mov eax, [esi] ; Start of program header table offset
+
+    pop esi 
+    push esi
+
+    add esi, eax    ; Start of program header table
+
+    .fetchingKernel:
+        call fetchSegment   ; Fetches a segment and automatic update esi to next entry, return 0 in eax if finished
+        cmp eax, 0
+        jne .fetchingKernel
+
+    pop esi
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+fetchSegment:
+    push ebp
+    mov ebp, esp
+
+    push esi
+
+    mov eax, [esi]
+
+    cmp eax, 0
+    je .finishedAllFetches
+
+    cmp eax, 1
+    jne .goNextFetch    ; Not a load segment
+
+    add esi, 0x10
+    mov ecx, [esi]
+    pop esi
+    push esi    ; Size of segment in ELF
+
+    add esi, 8
+    mov edi, [esi]  ; Segment start in memory
+    pop esi
+    push esi
+
+    add esi, 4
+    mov eax, [esi]
+    pop esi
+    push esi
+    add esi, eax    ; Segment start in ELF
+
+    .fetchingSegment
+        mov eax, [esi]
+        mov [edi], eax
+        loop .fetchingSegment
+
+    .goNextFetch:
+    pop esi
+    add esi, 0x20
+
+    mov esp, ebp
+    pop ebp
+    ret
     
+    .finishedAllFetches:
+    pop esi
+    
+    mov eax, 0
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+getEntryPoint:
+    push ebp
+    mov ebp, esp
+
+    add esi, 0x18
+
+    mov edi, [esi]
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+innerStage3:
+    mov		eax, 0x10		; set data segments to data selector (0x10)
+	mov		ds, eax
+	mov		ss, eax
+	mov		es, eax
+    
+    push word [kernelOffset]
+    push word [kernelSegment]
+    call parseRealModeAddressing    ; esi = start of Kernel ELF
+
+    call fetchKernel
+    call getEntryPoint      ; edi = entry point to jump into
+
+    ; Printing that will save us
+    ; mov word [0xb8000], 0xF030
+    ; mov word [0xb8002], 0xF031
+
     hlt
+
+; Developer Note: Bro, I just stopped programming assembly for 1 month and I feel dumb just thinking about this piece of heaven I'm cooking
