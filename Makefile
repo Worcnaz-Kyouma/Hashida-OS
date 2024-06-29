@@ -1,19 +1,39 @@
-# hexdump file -C
-NASMPARAMS = -isrc/bootloader/libs/ -f bin
+# Params
+NASMPARAMS_16 = -isrc/bootloader/libs/ -f bin
+NASMPARAMS_32 = -f elf32
+GNUPARAMS = -m32 -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
+LDPARAMS = -melf_i386
 FAT_PARAMS = -F 12
 DISK_SIZE = 2880
 
-STAGES = $(patsubst src/bootloader/stages/%.asm,bin/%.bin,$(wildcard src/bootloader/stages/*.asm))
+# Bootloader Objects
+STAGES = $(patsubst src/bootloader/stages/%.asm,build/%.o,$(wildcard src/bootloader/stages/*.asm))
 
-bin/%.bin: src/bootloader/stages/%.asm
+build/%.o: src/bootloader/stages/%.asm
+	mkdir -p build
+	nasm $(NASMPARAMS_16) $< -o $@
+
+# OS Objects
+CPP_SOURCES = $(shell find src/os -type f -name '*.cpp')
+ASM_SOURCES = $(shell find src/os -type f -name '*.asm')
+
+OBJECTS = $(patsubst src/os/%.cpp,build/%.o,$(CPP_SOURCES)) $(patsubst src/os/%.asm,build/%.o,$(ASM_SOURCES))
+
+build/%.o: src/os/%.asm
+	mkdir -p build
+	nasm $(NASMPARAMS_32) $< -o $@
+
+build/%.o: src/os/%.cpp
+	mkdir -p build
+	gcc $(GNUPARAMS) -o $@ -c $< 
+
+bin/hskernel.bin: linker.ld $(OBJECTS)
 	mkdir -p bin
-	nasm $(NASMPARAMS) $< -o $@
+	ld $(LDPARAMS) -T $< -o $@ $(OBJECTS)
 
-bin/%.bin: src/%.asm
+# OS Build
+bin/bootloader.img: $(STAGES) bin/hskernel.bin
 	mkdir -p bin
-	nasm $(NASMPARAMS) $< -o $@
-
-bin/bootloader.img: $(STAGES)
 	dd if=/dev/zero of=$@ bs=1024 count=$(DISK_SIZE) status=progress
 
 	sudo mkfs.vfat $(FAT_PARAMS) $@
@@ -21,8 +41,7 @@ bin/bootloader.img: $(STAGES)
 	sudo mkdir /mnt/tempdisk
 	sudo mount -o loop $@ /mnt/tempdisk
 
-	@for file in $(filter-out bin/stage1.bin,$^); do \
-        echo $$file; \
+	@for file in $(filter-out build/stage1.o,$^); do \
 		sudo cp $$file /mnt/tempdisk; \
 	done
 
@@ -35,20 +54,20 @@ bin/bootloader.img: $(STAGES)
 	
 	sudo rm -rf bpb.temp
 
-#-60 bytes por ter BPB no começo
-
 iso/bootloader.img: bin/bootloader.img
 	mkdir iso
 	cp $^ iso/
 
-hashidaOS.iso: iso/bootloader.img
+bin/hashidaOS.iso: iso/bootloader.img
 	genisoimage -quiet -V '$(basename $@)' -input-charset iso8859-1 -o $@ -b $(notdir $<) -hide $(notdir $<) iso/
 	rm -rf iso
 
-debug: hashidaOS.iso
+# Utils
+.PHONY: debug run clean
+debug: bin/hashidaOS.iso
 	hexdump $< -C
 
-run: hashidaOS.iso
+run: bin/hashidaOS.iso
 	qemu-system-i386                                 	\
   	-accel tcg,thread=single                       		\
   	-cpu core2duo                                  		\
@@ -61,4 +80,4 @@ run: hashidaOS.iso
   	-vga std
 
 clean:
-	rm -rf bin iso hashidaOS.iso
+	rm -rf build bin iso

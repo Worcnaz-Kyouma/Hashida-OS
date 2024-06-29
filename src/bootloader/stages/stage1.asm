@@ -57,7 +57,7 @@ numberOfSectors:    resb 1
 ; driveNumber:        db 0h
 rootDirStart:   resb 2
 dataReg:        resb 2
-stage2Name      db "STAGE2  BIN"
+stage2Name      db "STAGE2  O  "
 
 ; FATSegment:             dw 0x4434
 ; rootDirectoryOffset:    dw 0x0500

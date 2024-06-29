@@ -18,8 +18,8 @@ start: jmp entryPoint
 ;   Common Variables
 ;*****************
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
-    kernelName db 'KERNEL  BIN'
-
+    kernelName db   'HSKERNELBIN'
+    
     kernelOffset:    dw 0x0000
     kernelSegment:   dw 0x3000
 
