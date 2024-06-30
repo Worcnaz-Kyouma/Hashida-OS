@@ -136,7 +136,6 @@ print_2:
         ret
 
 dump16Registers_2:
-
     ; AX
     mov eax, eax
     call parseAxRegisterIntoAscii_2
@@ -175,10 +174,11 @@ parseRealModeAddressing:
     mov ebp, esp
 
     ; [ebp + 8] -> Segment
-    ; [ebp + 12] -> Offset
+    ; [ebp + 10] -> Offset
 
-    mov eax, [ebp + 12]
-    mov edx, [ebp + 8]
+    movzx eax, word [ebp + 10]
+    movzx edx, word [ebp + 8]
+
     shl edx, 4
     add eax, edx
 
@@ -284,21 +284,20 @@ getEntryPoint:
     ret
 
 innerStage3:
-    mov		eax, 0x10		; set data segments to data selector (0x10)
-	mov		ds, eax
-	mov		ss, eax
-	mov		es, eax
-    
-    push word [kernelOffset]
-    push word [kernelSegment]
-    call parseRealModeAddressing    ; esi = start of Kernel ELF ; NEED FIX!
-    mov esi, 0x00030000
+    mov		ax, 0x10		; set data segments to data selector (0x10)
+	mov		ds, ax
+	mov		ss, ax
+	mov		es, ax
+    mov     esp, 90000h
+
+    push word 0x0000
+    push word 0x3000
+    call parseRealModeAddressing    ; esi = start of Kernel ELF ;
 
     call fetchKernel
     call getEntryPoint      ; edi = entry point to jump into
-    
-    movzx eax, byte [0x1001e0]
-    call dump16Registers_2
+
+    jmp 0x8:0x001001d0
 
     ; Printing that will save us
     ; mov word [0xb8000], 0xF030

@@ -5,7 +5,6 @@ section .text
     global loader
 
 loader:
-    jmp 0xffffffff
     mov esp, kernel_stack
     call kernelMain
 
