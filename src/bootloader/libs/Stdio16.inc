@@ -33,6 +33,7 @@ bits 16
 ;*****************
 
 print:
+    pushf
     pusha
     .loop_printing:
     lodsb
@@ -44,6 +45,7 @@ print:
 
     .loopEnd_printing:
         popa
+        popf
         ret
 
 print_di:

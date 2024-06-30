@@ -3,7 +3,7 @@ bits 32
 section .text
     extern kernelMain
     global loader
-
+times 453114 nop
 loader:
     mov esp, kernel_stack
     call kernelMain

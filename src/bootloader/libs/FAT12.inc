@@ -357,6 +357,7 @@ loadClusters:
         push di             ; destinationOffset
         push es             ; destinationSegment
         call loadCluster    ; Returns the next values in ES, DI and output the current cluster into dx
+        jc .loopEnd_clusterError
 
         ; Next destination segment and offset into stack
         push di

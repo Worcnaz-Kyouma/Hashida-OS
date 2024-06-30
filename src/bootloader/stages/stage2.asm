@@ -20,6 +20,8 @@ start: jmp entryPoint
     welcomeStage2Msg db 'Jumped into Stage 2!... EPK', 0x0A, 0xD, 0
     kernelName db   'HSKERNELBIN'
 
+    failedStage2Msg db 'Failed to pass stage 2 of the bootloader... Sorry bro D:, good luck to fix/improve it(probably fixing it, i trust you)'
+
     kernelOffset:    dw 0x0000
     kernelSegment:   dw 0x3000
 
@@ -84,7 +86,8 @@ entryPoint:
     push word [kernelOffset]
     push ax                     ; First cluster
     call loadClusters
-    
+    jc .failedStage2
+
     call enableA20
 
     push word [GDTSegment]
@@ -109,66 +112,22 @@ entryPoint:
     ; Immediate jmp to adjust CS
     jmp far dword [innerStage3Pointer]
 
+    .failedStage2:
+        mov si, failedStage2Msg
+        call print
+
+        cli
+        hlt
+
 ;*****************
 ;   Entry point to inner stage 3
 ;*****************
 
 bits 32
 
-parseAxRegisterIntoAscii_pointer_asciiRegister_2 db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x0A, 0xD, 0
-
-target_address dd 0x001001d0
-
-print_2:
-    mov edi, 0xb8000
-
-    pusha
-    .loop_printing:
-    lodsb
-    or al,al
-    jz .loopEnd_printing
-    mov [edi], al
-    add edi, 2
-    jmp .loop_printing
-
-    .loopEnd_printing:
-        popa
-        ret
-
-dump16Registers_2:
-    ; AX
-    mov eax, eax
-    call parseAxRegisterIntoAscii_2
-    call print_2
-
-    ret
-    
-
-parseAxRegisterIntoAscii_2:
-    pusha
-    lea esi, parseAxRegisterIntoAscii_pointer_asciiRegister_2
-    add esi, 38
-    mov ecx, 39
-    .loop_asciiRegister:
-        mov bl, [esi]
-        cmp bl, 0x20
-        je .loopEnd_asciiRegister
-
-        mov ebx, eax
-        and ebx, 00000000000000000000000000000001b
-        add bl, 00110000b
-        mov [esi], bl
-
-        shr eax, 1
-        .loopEnd_asciiRegister:
-        dec esi
-        loop .loop_asciiRegister
-
-    popa
-    
-    mov esi, parseAxRegisterIntoAscii_pointer_asciiRegister_2
-    ret
-
+;*****************
+;   32 Bits Functions
+;*****************
 parseRealModeAddressing:
     push ebp
     mov ebp, esp
@@ -188,7 +147,7 @@ parseRealModeAddressing:
     pop ebp
     ret
 
-fetchKernel:
+fetchKernelTo1MB:
     push ebp
     mov ebp, esp
 
@@ -283,6 +242,9 @@ getEntryPoint:
     pop ebp
     ret
 
+;*****************
+;   32 Code
+;*****************
 innerStage3:
     mov		ax, 0x10		; set data segments to data selector (0x10)
 	mov		ds, ax
@@ -290,18 +252,14 @@ innerStage3:
 	mov		es, ax
     mov     esp, 90000h
 
-    push word 0x0000
-    push word 0x3000
+    push word [kernelOffset + 0x10000]
+    push word [kernelSegment + 0x10000]
     call parseRealModeAddressing    ; esi = start of Kernel ELF ;
 
-    call fetchKernel
+    call fetchKernelTo1MB
     call getEntryPoint      ; edi = entry point to jump into
 
-    jmp 0x8:0x001001d0
-
-    ; Printing that will save us
-    ; mov word [0xb8000], 0xF030
-    ; mov word [0xb8002], 0xF031
+    jmp edi
 
     hlt
 
