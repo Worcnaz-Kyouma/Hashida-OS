@@ -117,6 +117,8 @@ bits 32
 
 parseAxRegisterIntoAscii_pointer_asciiRegister_2 db 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x20,0x00, 0x00, 0x00, 0x00, 0x0A, 0xD, 0
 
+target_address dd 0x001001d0
+
 print_2:
     mov edi, 0xb8000
 
@@ -245,11 +247,11 @@ fetchSegment:
     add esi, eax    ; Segment start in ELF
 
     .fetchingSegment
-        mov eax, [esi]
-        mov [edi], eax
+        mov al, [esi]
+        mov [edi], al
 
-        add esi, 4
-        add edi, 4
+        add esi, 1
+        add edi, 1
         loop .fetchingSegment
 
     .goNextFetch:
@@ -295,7 +297,8 @@ innerStage3:
     call fetchKernel
     call getEntryPoint      ; edi = entry point to jump into
     
-    jmp 0x1001d0
+    movzx eax, byte [0x1001e0]
+    call dump16Registers_2
 
     ; Printing that will save us
     ; mov word [0xb8000], 0xF030

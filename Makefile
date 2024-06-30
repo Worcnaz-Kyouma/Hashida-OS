@@ -64,6 +64,7 @@ bin/hashidaOS.iso: iso/bootloader.img
 
 # Utils
 .PHONY: debug run clean
+build: bin/hashidaOS.iso
 debug: bin/hashidaOS.iso
 	hexdump $< -C
 
